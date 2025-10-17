@@ -40,24 +40,28 @@ const Navbar = () => {
         }
     }, [logout]);
 
+    // WhatsApp contact function
+    const handleContactClick = () => {
+        window.open('https://wa.me/8801732551463', '_blank', 'noopener,noreferrer');
+    };
+
     return (
         <div className="w-full font-sans">
-            {/* Top Bar */}
+            {/* Top Bar - Hidden but functional phone number */}
             <div className="bg-slate-900 text-white py-2 px-4 shadow-lg">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 text-sm">
-                    {/* Contact Info */}
+                    {/* Hidden Contact Info - Still clickable */}
                     <div className="flex items-center gap-4">
-                        <a 
-                            href="https://wa.me/1234567890" 
-                            className="flex items-center gap-2 hover:text-blue-200 transition-all duration-300 group"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                        <button 
+                            onClick={handleContactClick}
+                            className="flex items-center gap-2 hover:text-blue-200 transition-all duration-300 group opacity-70 hover:opacity-100"
+                            aria-label="Contact via WhatsApp"
                         >
                             <Phone className="w-3.5 h-3.5" />
                             <span className="font-medium group-hover:scale-105 transition-transform">
-                                +1 (234) 567-890
+                                Contact Us
                             </span>
-                        </a>
+                        </button>
                     </div>
                     
                     {/* Social Icons */}
@@ -148,7 +152,7 @@ const Navbar = () => {
 
                                     {/* User Dropdown */}
                                     {isUserDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl border backdrop-blur-sm py-1 z-50 bg-slate-900 border-teal-500/25">
+                                        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl border backdrop-blur-sm py-1 z-50 bg-slate-900 border-teal-500/25 animate-in fade-in slide-in-from-top-2 duration-200">
                                             <div className="px-4 py-2 border-b border-teal-500/25">
                                                 <p className="text-sm font-medium truncate text-slate-100">
                                                     {currentUser.displayName || 'User'}
@@ -196,20 +200,27 @@ const Navbar = () => {
                             {/* Mobile Menu Button */}
                             <button
                                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="lg:hidden p-2 rounded-lg transition-colors hover:bg-teal-500/20 text-slate-100"
+                                className="lg:hidden p-2 rounded-lg transition-all duration-300 hover:bg-teal-500/20 text-slate-100 active:scale-95"
                                 aria-label="Toggle menu"
                             >
-                                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                                {isMobileMenuOpen ? 
+                                    <X className="w-6 h-6 transition-transform duration-300 rotate-90" /> : 
+                                    <Menu className="w-6 h-6 transition-transform duration-300" />
+                                }
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Mobile Menu */}
+                {/* Mobile Menu - Smoother animation */}
                 <div 
-                    className={`lg:hidden overflow-hidden transition-all duration-300 ease-in-out bg-slate-900 ${
-                        isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                    className={`lg:hidden overflow-hidden transition-all duration-500 ease-out bg-slate-900 ${
+                        isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
                     }`}
+                    style={{
+                        transitionProperty: 'max-height, opacity',
+                        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
                 >
                     <div className="border-t py-2 border-teal-500/25">
                         <div className="px-4 space-y-1">
@@ -219,12 +230,16 @@ const Navbar = () => {
                                     <Link
                                         key={item.path}
                                         to={item.path}
-                                        className={`block py-3 px-4 rounded-lg transition-all duration-300 font-medium relative ${
+                                        className={`block py-3 px-4 rounded-lg transition-all duration-300 font-medium relative transform hover:translate-x-1 ${
                                             isActive
                                                 ? 'text-cyan-300 bg-teal-500/20 font-semibold'
                                                 : 'text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10'
                                         }`}
-                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        onClick={() => {
+                                            setIsMobileMenuOpen(false);
+                                            // Small delay to show the click feedback
+                                            setTimeout(() => setIsMobileMenuOpen(false), 150);
+                                        }}
                                     >
                                         {item.name}
                                         {isActive && (
@@ -234,11 +249,16 @@ const Navbar = () => {
                                 );
                             })}
                             
+
+                            
                             {!currentUser && (
                                 <Link 
                                     to="/login"
-                                    className="flex items-center justify-center gap-2 w-full mt-3 py-3 rounded-lg font-medium transition-all duration-300 bg-teal-500 text-slate-900"
-                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-medium transition-all duration-300 bg-teal-500 text-slate-900 hover:bg-teal-600 active:scale-95"
+                                    onClick={() => {
+                                        setIsMobileMenuOpen(false);
+                                        setTimeout(() => setIsMobileMenuOpen(false), 150);
+                                    }}
                                 >
                                     <LogIn className="w-4 h-4" />
                                     <span className="font-semibold">Login</span>

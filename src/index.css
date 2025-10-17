@@ -1,1 +1,5 @@
 @import "tailwindcss";
+.glow-text {
+  color: #fff;
+  animation: letterGlow 2.5s infinite ease-in-out;
+}

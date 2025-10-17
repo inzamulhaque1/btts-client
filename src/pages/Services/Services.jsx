@@ -17,7 +17,7 @@ const Services = () => {
     const fetchServices = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('https://btts-server.vercel.app/services');
+        const response = await axios.get('https://btts-server-production.up.railway.app/services');
         const servicesData = response.data || [];
         setServices(servicesData);
         

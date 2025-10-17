@@ -43,7 +43,7 @@ const MyOrders = () => {
       setError(null);
       
       const userId = currentUser.uid || currentUser._id || currentUser.id;
-      const response = await axios.get(`https://btts-server.vercel.app/orders/user/${userId}`);
+      const response = await axios.get(`https://btts-server-production.up.railway.app/orders/user/${userId}`);
       setOrders(response.data);
     } catch (err) {
       console.error("Failed to fetch orders:", err);

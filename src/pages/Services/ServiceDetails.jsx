@@ -36,7 +36,7 @@ const ServiceDetails = () => {
     const fetchService = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://btts-server.vercel.app/services/${id}`);
+        const response = await axios.get(`https://btts-server-production.up.railway.app/services/${id}`);
         setService(response.data);
       } catch (err) {
         setError("Failed to load service details. Please try again.");
@@ -83,7 +83,7 @@ const ServiceDetails = () => {
         orderDate: new Date().toISOString()
       };
 
-      const response = await axios.post("https://btts-server.vercel.app/orders", orderData);
+      const response = await axios.post("https://btts-server-production.up.railway.app/orders", orderData);
       
       if (response.data.success) {
         // Redirect to orders page or show success message

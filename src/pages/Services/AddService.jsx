@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://btts-server.vercel.app';
+const API_BASE_URL = 'https://btts-server-production.up.railway.app';
 const IMGBB_API_KEY = '288f2bbd3e2c4d9db5eda66b617eb1c4';
 
 const createService = async (serviceData) => {

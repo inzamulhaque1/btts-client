@@ -52,7 +52,7 @@ const AdminOrders = () => {
         if (filters[key]) params.append(key, filters[key]);
       });
 
-      const response = await axios.get(`https://btts-server.vercel.app/admin/orders?${params}`);
+      const response = await axios.get(`https://btts-server-production.up.railway.app/admin/orders?${params}`);
       setOrders(response.data.orders);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -65,7 +65,7 @@ const AdminOrders = () => {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await axios.get("https://btts-server.vercel.app/admin/orders/stats");
+      const response = await axios.get("https://btts-server-production.up.railway.app/admin/orders/stats");
       setStats(response.data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -89,7 +89,7 @@ const AdminOrders = () => {
   // Update order status
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`https://btts-server.vercel.app/admin/orders/${orderId}`, {
+      await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`, {
         orderStatus: newStatus
       });
       fetchOrders();
@@ -107,7 +107,7 @@ const AdminOrders = () => {
         setSelectedOrder(order);
         setShowWiseModal(true);
       } else {
-        await axios.put(`https://btts-server.vercel.app/admin/orders/${orderId}`, {
+        await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`, {
           paymentStatus: newStatus
         });
         fetchOrders();
@@ -134,7 +134,7 @@ const handleWiseCredentialsSubmit = async () => {
       wiseImage: wiseForm.wiseImage
     });
 
-    const response = await axios.put(`https://btts-server.vercel.app/admin/orders/${selectedOrder._id}`, {
+    const response = await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${selectedOrder._id}`, {
       paymentStatus: "paid",
       orderStatus: "delivered",
       wiseEmail: wiseForm.wiseEmail,
@@ -218,7 +218,7 @@ const handleImageUpload = async (e) => {
     if (!window.confirm("Are you sure you want to delete this order?")) return;
     
     try {
-      await axios.delete(`https://btts-server.vercel.app/admin/orders/${orderId}`);
+      await axios.delete(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`);
       fetchOrders();
       fetchStats();
     } catch (err) {
