@@ -72,7 +72,7 @@ const Login = () => {
       </div>
 
       {/* Main Container */}
-      <div className="relative z-10 w-full max-w-md mx-4 lg:max-w-4xl">
+      <div className="relative md:mt-14  z-10 w-full max-w-md mx-4 lg:max-w-4xl">
         <div className="flex flex-col lg:flex-row bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-3xl border border-teal-500/30 shadow-2xl shadow-teal-500/20 overflow-hidden">
           
           {/* Mobile & Tablet: Top Section - Branding */}

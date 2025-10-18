@@ -11,6 +11,8 @@ import Dashboard from "../pages/Dashboard/Dashboard";
 import MyOrders from "../pages/Dashboard/User/MyOrders";
 import AdminOrders from "../pages/Dashboard/Admin/AdminOrders";
 import UnderConstruction from "../components/UnderConstruction";
+import ContactUs from "../pages/Contact/ContactUs";
+import Profile from "../pages/Dashboard/Profile";
 
 export const router = createBrowserRouter([
   {
@@ -27,12 +29,20 @@ export const router = createBrowserRouter([
         element: <AboutUs></AboutUs>,
       },
       {
+        path: "/contact",
+        element: <ContactUs></ContactUs>,
+      },
+      {
         path: "/register",
         element: <Register></Register>,
       },
       {
         path: "/login",
         element: <Login></Login>,
+      },
+      {
+        path: "/profile",
+        element: <Profile></Profile>,
       },
       {
         path: "/services",

@@ -22,7 +22,7 @@ const Navbar = () => {
         if (currentUser) {
             return [
                 ...baseItems.slice(0, 3), // Home, About, Services
-                { name: 'My Order', path: '/orders' }, // My Order after Services
+                { name: 'My Order', path: '/my-orders' }, // My Order after Services
                 ...baseItems.slice(3) // Contact
             ];
         }
