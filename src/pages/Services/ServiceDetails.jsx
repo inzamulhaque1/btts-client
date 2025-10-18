@@ -2,13 +2,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  Clock, 
-  DollarSign, 
-  Shield, 
-  Star, 
+import {
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Shield,
+  Star,
   Calendar,
   CreditCard,
   Truck,
@@ -17,7 +17,7 @@ import {
   Globe,
   Lock,
   TrendingUp,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { useAuth } from "../../provider/AuthProvider";
 
@@ -25,7 +25,7 @@ const ServiceDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  
+
   useEffect(() => {
     if (!currentUser) {
       navigate("/register");
@@ -41,7 +41,9 @@ const ServiceDetails = () => {
     const fetchService = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`https://btts-server-production.up.railway.app/services/${id}`);
+        const response = await axios.get(
+          `https://btts-server-production.up.railway.app/services/${id}`
+        );
         setService(response.data);
       } catch (err) {
         setError("Failed to load service details. Please try again.");
@@ -54,10 +56,10 @@ const ServiceDetails = () => {
   }, [id]);
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -69,7 +71,7 @@ const ServiceDetails = () => {
 
     try {
       setPlacingOrder(true);
-      
+
       const orderData = {
         productId: service._id,
         title: service.title,
@@ -83,11 +85,14 @@ const ServiceDetails = () => {
         userName: currentUser.displayName || currentUser.email,
         paymentStatus: "pending",
         orderStatus: "pending",
-        orderDate: new Date().toISOString()
+        orderDate: new Date().toISOString(),
       };
 
-      const response = await axios.post("https://btts-server-production.up.railway.app/orders", orderData);
-      
+      const response = await axios.post(
+        "https://btts-server-production.up.railway.app/orders",
+        orderData
+      );
+
       if (response.data.success) {
         alert("Order placed successfully!");
         navigate("/my-orders");
@@ -109,7 +114,7 @@ const ServiceDetails = () => {
     xoom: "X",
     paypal: "PP",
     stripe: "S",
-    bank: "🏦"
+    bank: "🏦",
   };
 
   if (loading) {
@@ -120,7 +125,9 @@ const ServiceDetails = () => {
             <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-slate-700 border-t-teal-400 mx-auto"></div>
             <div className="absolute inset-0 rounded-full bg-teal-400/20 blur-xl animate-pulse"></div>
           </div>
-          <p className="text-slate-300 mt-4 text-base sm:text-lg font-semibold">Loading service details...</p>
+          <p className="text-slate-300 mt-4 text-base sm:text-lg font-semibold">
+            Loading service details...
+          </p>
         </div>
       </div>
     );
@@ -130,7 +137,9 @@ const ServiceDetails = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
         <div className="p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-red-500/30 backdrop-blur-sm text-center max-w-md w-full">
-          <p className="text-red-400 mb-4 sm:mb-6 text-base sm:text-lg font-semibold">{error || "Service not found"}</p>
+          <p className="text-red-400 mb-4 sm:mb-6 text-base sm:text-lg font-semibold">
+            {error || "Service not found"}
+          </p>
           <button
             onClick={() => navigate(-1)}
             className="px-4 sm:px-6 py-2.5 sm:py-3 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border border-teal-400/40 rounded-lg sm:rounded-xl text-teal-300 hover:border-teal-400/60 transition-all duration-300 hover:scale-105 font-bold cursor-pointer text-sm sm:text-base w-full"
@@ -176,7 +185,9 @@ const ServiceDetails = () => {
           className="group flex items-center gap-2 sm:gap-3 mb-6 sm:mb-8 px-3 sm:px-4 py-2 rounded-lg sm:rounded-xl bg-gradient-to-r from-slate-800/80 to-slate-900/80 border border-teal-500/30 hover:border-teal-400/60 transition-all duration-300 hover:scale-105 cursor-pointer w-full sm:w-auto justify-center sm:justify-start"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400 group-hover:text-teal-300 transition-colors flex-shrink-0" />
-          <span className="text-teal-300 font-semibold text-sm sm:text-base">Back to Services</span>
+          <span className="text-teal-300 font-semibold text-sm sm:text-base">
+            Back to Services
+          </span>
         </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -185,7 +196,7 @@ const ServiceDetails = () => {
             <div className="group relative">
               {/* Glow Effect */}
               <div className="absolute inset-0 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
+
               <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-teal-500/30 group-hover:border-teal-400/60 rounded-xl sm:rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-500">
                 {/* Top Accent Line */}
                 <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500"></div>
@@ -235,9 +246,14 @@ const ServiceDetails = () => {
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {service.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-slate-800/30 border border-slate-700/50 hover:border-teal-500/30 transition-all group/feature">
+                          <div
+                            key={idx}
+                            className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-slate-800/30 border border-slate-700/50 hover:border-teal-500/30 transition-all group/feature"
+                          >
                             <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400 flex-shrink-0 group-hover/feature:text-teal-300" />
-                            <span className="text-slate-200 font-semibold text-sm sm:text-base break-words">{feature}</span>
+                            <span className="text-slate-200 font-semibold text-sm sm:text-base break-words">
+                              {feature}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -252,8 +268,12 @@ const ServiceDetails = () => {
                           <Zap className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-teal-300" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider">Delivery Time</p>
-                          <p className="font-bold text-teal-300 text-sm sm:text-base md:text-lg capitalize break-words">{service.deliveryTime}</p>
+                          <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider">
+                            Delivery Time
+                          </p>
+                          <p className="font-bold text-teal-300 text-sm sm:text-base md:text-lg capitalize break-words">
+                            {service.deliveryTime}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -263,31 +283,41 @@ const ServiceDetails = () => {
                         <Globe className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-cyan-300" />
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider">Category</p>
-                        <p className="font-bold text-cyan-300 text-sm sm:text-base md:text-lg capitalize break-words">{service.category}</p>
+                        <p className="text-xs sm:text-sm text-slate-400 font-semibold uppercase tracking-wider">
+                          Category
+                        </p>
+                        <p className="font-bold text-cyan-300 text-sm sm:text-base md:text-lg capitalize break-words">
+                          {service.category}
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Payment Methods */}
-                  {service.paymentMethods && service.paymentMethods.length > 0 && (
-                    <div className="space-y-3 sm:space-y-4">
-                      <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
-                        <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-teal-400 flex-shrink-0" />
-                        Accepted Payment Methods
-                      </h3>
-                      <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2 sm:gap-3">
-                        {service.paymentMethods.map((method, idx) => (
-                          <div key={idx} className="flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-teal-500/30 transition-all group/payment">
-                            <span className="text-xl sm:text-2xl font-bold text-teal-400 group-hover/payment:text-teal-300 flex-shrink-0">
-                              {paymentIcons[method] || "💳"}
-                            </span>
-                            <span className="text-slate-200 font-bold capitalize text-xs sm:text-sm break-words">{method}</span>
-                          </div>
-                        ))}
+                  {service.paymentMethods &&
+                    service.paymentMethods.length > 0 && (
+                      <div className="space-y-3 sm:space-y-4">
+                        <h3 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
+                          <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-teal-400 flex-shrink-0" />
+                          Accepted Payment Methods
+                        </h3>
+                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 lg:grid-cols-3 gap-2 sm:gap-3">
+                          {service.paymentMethods.map((method, idx) => (
+                            <div
+                              key={idx}
+                              className="flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl bg-slate-800/50 border border-slate-700/50 hover:border-teal-500/30 transition-all group/payment"
+                            >
+                              <span className="text-xl sm:text-2xl font-bold text-teal-400 group-hover/payment:text-teal-300 flex-shrink-0">
+                                {paymentIcons[method] || "💳"}
+                              </span>
+                              <span className="text-slate-200 font-bold capitalize text-xs sm:text-sm break-words">
+                                {method}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </div>
@@ -299,16 +329,18 @@ const ServiceDetails = () => {
               {/* Price Card */}
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-cyan-500/20 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
+
                 <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border-2 border-teal-400/40 rounded-xl sm:rounded-2xl overflow-hidden backdrop-blur-sm">
                   <div className="h-1 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-500"></div>
-                  
+
                   <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
                     {/* Price */}
                     <div className="text-center p-4 sm:p-6 rounded-lg sm:rounded-xl bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-400/40">
                       <div className="flex items-center justify-center gap-1 sm:gap-2 text-slate-400 mb-2 sm:mb-3">
                         <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                        <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">Starting From</span>
+                        <span className="text-xs sm:text-sm font-bold uppercase tracking-wider">
+                          Starting From
+                        </span>
                       </div>
                       <div className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-2 sm:mb-3">
                         ${service.price}
@@ -316,14 +348,16 @@ const ServiceDetails = () => {
                       {service.deliveryTime && (
                         <div className="flex items-center justify-center gap-1 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-slate-800/50">
                           <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-teal-400 flex-shrink-0" />
-                          <span className="text-slate-200 font-bold capitalize text-xs sm:text-sm">{service.deliveryTime} delivery</span>
+                          <span className="text-slate-200 font-bold capitalize text-xs sm:text-sm">
+                            {service.deliveryTime} delivery
+                          </span>
                         </div>
                       )}
                     </div>
 
                     {/* Action Buttons */}
                     <div className="space-y-2 sm:space-y-3">
-                      <button 
+                      <button
                         onClick={handlePlaceOrder}
                         disabled={placingOrder}
                         className="group/btn w-full relative px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl bg-red-500 border-2 border-white hover:border-teal-400/60 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden cursor-pointer animate-pulse-glow"
@@ -333,18 +367,27 @@ const ServiceDetails = () => {
                           {placingOrder ? (
                             <>
                               <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-2 border-white border-t-transparent"></div>
-                              <span className="text-sm sm:text-base">Placing Order...</span>
+                              <span className="text-sm sm:text-base">
+                                Placing Order...
+                              </span>
                             </>
                           ) : (
                             <>
                               <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
-                              <span className="text-sm sm:text-base">Place Order Now</span>
+                              <span className="text-sm sm:text-base">
+                                Place Order Now
+                              </span>
                             </>
                           )}
                         </span>
                       </button>
-                      
-                      <button className="w-full px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl bg-slate-800/50 border-2 border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 font-bold text-slate-300 hover:text-cyan-300 cursor-pointer text-sm sm:text-base">
+
+                      <button
+                        onClick={() =>
+                          window.open("https://wa.me/8801732551463", "_blank")
+                        }
+                        className="w-full px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl bg-slate-800/50 border-2 border-slate-700/50 hover:border-cyan-500/30 transition-all duration-300 font-bold text-slate-300 hover:text-cyan-300 cursor-pointer text-sm sm:text-base"
+                      >
                         Contact Provider
                       </button>
                     </div>
@@ -358,15 +401,21 @@ const ServiceDetails = () => {
                       <div className="space-y-2 sm:space-y-3">
                         <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/30">
                           <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
-                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">Money-back guarantee</span>
+                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">
+                            Money-back guarantee
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/30">
                           <Lock className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
-                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">Secure payment processing</span>
+                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">
+                            Secure payment processing
+                          </span>
                         </div>
                         <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg bg-slate-800/30">
                           <Star className="w-4 h-4 sm:w-5 sm:h-5 text-green-400 flex-shrink-0" />
-                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">Quality assurance</span>
+                          <span className="text-slate-300 font-semibold text-xs sm:text-sm">
+                            Quality assurance
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -384,10 +433,10 @@ const ServiceDetails = () => {
               {/* Additional Info Card */}
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-xl sm:rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                
+
                 <div className="relative bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-cyan-500/30 group-hover:border-cyan-400/60 rounded-xl sm:rounded-2xl overflow-hidden backdrop-blur-sm transition-all duration-500">
                   <div className="h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
-                  
+
                   <div className="p-4 sm:p-6">
                     <h4 className="font-bold text-cyan-300 mb-4 sm:mb-6 flex items-center gap-1 sm:gap-2 text-base sm:text-lg">
                       <User className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 flex-shrink-0" />
@@ -395,11 +444,17 @@ const ServiceDetails = () => {
                     </h4>
                     <div className="space-y-3 sm:space-y-4">
                       <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-slate-800/30">
-                        <span className="text-slate-400 font-semibold text-xs sm:text-sm">Category:</span>
-                        <span className="font-bold text-cyan-300 capitalize text-xs sm:text-sm">{service.category}</span>
+                        <span className="text-slate-400 font-semibold text-xs sm:text-sm">
+                          Category:
+                        </span>
+                        <span className="font-bold text-cyan-300 capitalize text-xs sm:text-sm">
+                          {service.category}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-slate-800/30">
-                        <span className="text-slate-400 font-semibold text-xs sm:text-sm">Status:</span>
+                        <span className="text-slate-400 font-semibold text-xs sm:text-sm">
+                          Status:
+                        </span>
                         <span className="font-bold text-green-400 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                           <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0"></div>
                           Available
@@ -407,13 +462,19 @@ const ServiceDetails = () => {
                       </div>
                       {service.deliveryTime && (
                         <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-slate-800/30">
-                          <span className="text-slate-400 font-semibold text-xs sm:text-sm">Delivery:</span>
-                          <span className="font-bold text-teal-300 capitalize text-xs sm:text-sm">{service.deliveryTime}</span>
+                          <span className="text-slate-400 font-semibold text-xs sm:text-sm">
+                            Delivery:
+                          </span>
+                          <span className="font-bold text-teal-300 capitalize text-xs sm:text-sm">
+                            {service.deliveryTime}
+                          </span>
                         </div>
                       )}
                       {service.popular && (
                         <div className="flex justify-between items-center p-2 sm:p-3 rounded-lg bg-slate-800/30">
-                          <span className="text-slate-400 font-semibold text-xs sm:text-sm">Demand:</span>
+                          <span className="text-slate-400 font-semibold text-xs sm:text-sm">
+                            Demand:
+                          </span>
                           <span className="font-bold text-yellow-400 flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
                             <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                             High

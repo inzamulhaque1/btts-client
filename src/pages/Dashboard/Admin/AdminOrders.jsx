@@ -16,11 +16,9 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  AlertCircle,
-  Edit
+  AlertCircle
 } from "lucide-react";
 import { usePrivateRoute } from "../../../components/usePrivateRoute";
-
 
 const AdminOrders = () => {
   const navigate = useNavigate();
@@ -44,6 +42,14 @@ const AdminOrders = () => {
   });
   usePrivateRoute(["admin"]);
 
+  // API configuration
+  const API_CONFIG = {
+    baseURL: "https://btts-server-production.up.railway.app",
+    headers: {
+      'x-api-key': 'admin123456'
+    }
+  };
+
   // Fetch orders
   const fetchOrders = async () => {
     try {
@@ -55,11 +61,9 @@ const AdminOrders = () => {
         if (filters[key]) params.append(key, filters[key]);
       });
 
-      const response = await axios.get(`https://btts-server-production.up.railway.app/admin/orders?${params}`, {
-      headers: {
-        'x-api-key': 'admin123456' // Use your actual admin API key
-      }
-    });
+      const response = await axios.get(`${API_CONFIG.baseURL}/admin/orders?${params}`, {
+        headers: API_CONFIG.headers
+      });
       setOrders(response.data.orders);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
@@ -72,7 +76,9 @@ const AdminOrders = () => {
   // Fetch statistics
   const fetchStats = async () => {
     try {
-      const response = await axios.get("https://btts-server-production.up.railway.app/admin/orders/stats");
+      const response = await axios.get(`${API_CONFIG.baseURL}/admin/orders/stats`, {
+        headers: API_CONFIG.headers
+      });
       setStats(response.data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
@@ -96,8 +102,10 @@ const AdminOrders = () => {
   // Update order status
   const updateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`, {
+      await axios.put(`${API_CONFIG.baseURL}/admin/orders/${orderId}`, {
         orderStatus: newStatus
+      }, {
+        headers: API_CONFIG.headers
       });
       fetchOrders();
       fetchStats();
@@ -114,8 +122,10 @@ const AdminOrders = () => {
         setSelectedOrder(order);
         setShowWiseModal(true);
       } else {
-        await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`, {
+        await axios.put(`${API_CONFIG.baseURL}/admin/orders/${orderId}`, {
           paymentStatus: newStatus
+        }, {
+          headers: API_CONFIG.headers
         });
         fetchOrders();
         fetchStats();
@@ -127,105 +137,108 @@ const AdminOrders = () => {
   };
 
   // Handle WISE credentials submission
-// Handle WISE credentials submission
-const handleWiseCredentialsSubmit = async () => {
-  if (!wiseForm.wiseEmail || !wiseForm.wisePassword) {
-    alert("Please fill in both WISE email and password");
-    return;
-  }
-
-  try {
-    console.log("Submitting WISE credentials:", {
-      wiseEmail: wiseForm.wiseEmail,
-      wisePassword: wiseForm.wisePassword,
-      wiseImage: wiseForm.wiseImage
-    });
-
-    const response = await axios.put(`https://btts-server-production.up.railway.app/admin/orders/${selectedOrder._id}`, {
-      paymentStatus: "paid",
-      orderStatus: "delivered",
-      wiseEmail: wiseForm.wiseEmail,
-      wisePassword: wiseForm.wisePassword,
-      wiseImage: wiseForm.wiseImage
-    });
-    
-    console.log("Update response:", response.data);
-    
-    fetchOrders();
-    fetchStats();
-    setShowWiseModal(false);
-    setSelectedOrder(null);
-    setWiseForm({ wiseEmail: "", wisePassword: "", wiseImage: null });
-    
-    alert("Order updated successfully with WISE credentials!");
-  } catch (err) {
-    console.error("Failed to update order with WISE credentials:", err);
-    console.error("Error response:", err.response?.data);
-    alert("Failed to update order: " + (err.response?.data?.error || err.message));
-  }
-};
-
-// Upload image to ImgBB
-const uploadImage = async (file) => {
-  if (!file) return null;
-
-  try {
-    console.log("Starting image upload...", file);
-    
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    console.log("Sending to ImgBB...");
-    
-    const response = await axios.post(
-      `https://api.imgbb.com/1/upload?key=288f2bbd3e2c4d9db5eda66b617eb1c4`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-
-    console.log("ImgBB response:", response.data);
-
-    if (response.data.success) {
-      const imageUrl = response.data.data.url;
-      console.log("Image uploaded successfully:", imageUrl);
-      return imageUrl;
-    } else {
-      throw new Error('Image upload failed');
+  const handleWiseCredentialsSubmit = async () => {
+    if (!wiseForm.wiseEmail || !wiseForm.wisePassword) {
+      alert("Please fill in both WISE email and password");
+      return;
     }
-  } catch (error) {
-    console.error("Image upload error:", error);
-    console.error("Error details:", error.response?.data);
-    alert("Failed to upload image: " + (error.response?.data?.error?.message || error.message));
-  }
-  return null;
-};
 
-// Handle image upload
-const handleImageUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    try {
+      console.log("Submitting WISE credentials:", {
+        wiseEmail: wiseForm.wiseEmail,
+        wisePassword: wiseForm.wisePassword,
+        wiseImage: wiseForm.wiseImage
+      });
 
-  console.log("File selected:", file);
-  
-  const imageUrl = await uploadImage(file);
-  console.log("Upload result:", imageUrl);
-  
-  if (imageUrl) {
-    setWiseForm(prev => ({ ...prev, wiseImage: imageUrl }));
-    console.log("Wise form updated with image:", imageUrl);
-  }
-};
+      const response = await axios.put(`${API_CONFIG.baseURL}/admin/orders/${selectedOrder._id}`, {
+        paymentStatus: "paid",
+        orderStatus: "delivered",
+        wiseEmail: wiseForm.wiseEmail,
+        wisePassword: wiseForm.wisePassword,
+        wiseImage: wiseForm.wiseImage
+      }, {
+        headers: API_CONFIG.headers
+      });
+      
+      console.log("Update response:", response.data);
+      
+      fetchOrders();
+      fetchStats();
+      setShowWiseModal(false);
+      setSelectedOrder(null);
+      setWiseForm({ wiseEmail: "", wisePassword: "", wiseImage: null });
+      
+      alert("Order updated successfully with WISE credentials!");
+    } catch (err) {
+      console.error("Failed to update order with WISE credentials:", err);
+      console.error("Error response:", err.response?.data);
+      alert("Failed to update order: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  // Upload image to ImgBB
+  const uploadImage = async (file) => {
+    if (!file) return null;
+
+    try {
+      console.log("Starting image upload...", file);
+      
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      console.log("Sending to ImgBB...");
+      
+      const response = await axios.post(
+        `https://api.imgbb.com/1/upload?key=288f2bbd3e2c4d9db5eda66b617eb1c4`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      console.log("ImgBB response:", response.data);
+
+      if (response.data.success) {
+        const imageUrl = response.data.data.url;
+        console.log("Image uploaded successfully:", imageUrl);
+        return imageUrl;
+      } else {
+        throw new Error('Image upload failed');
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+      console.error("Error details:", error.response?.data);
+      alert("Failed to upload image: " + (error.response?.data?.error?.message || error.message));
+    }
+    return null;
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    console.log("File selected:", file);
+    
+    const imageUrl = await uploadImage(file);
+    console.log("Upload result:", imageUrl);
+    
+    if (imageUrl) {
+      setWiseForm(prev => ({ ...prev, wiseImage: imageUrl }));
+      console.log("Wise form updated with image:", imageUrl);
+    }
+  };
 
   // Delete order
   const deleteOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to delete this order?")) return;
     
     try {
-      await axios.delete(`https://btts-server-production.up.railway.app/admin/orders/${orderId}`);
+      await axios.delete(`${API_CONFIG.baseURL}/admin/orders/${orderId}`, {
+        headers: API_CONFIG.headers
+      });
       fetchOrders();
       fetchStats();
     } catch (err) {
@@ -241,35 +254,6 @@ const handleImageUpload = async (e) => {
       day: 'numeric',
       year: 'numeric'
     });
-  };
-
-  // Status badge component
-  const StatusBadge = ({ status, type = "order" }) => {
-    const config = {
-      order: {
-        pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
-        processing: { color: "bg-blue-100 text-blue-800", icon: Package },
-        completed: { color: "bg-green-100 text-green-800", icon: CheckCircle },
-        delivered: { color: "bg-green-100 text-green-800", icon: CheckCircle },
-        cancelled: { color: "bg-red-100 text-red-800", icon: XCircle }
-      },
-      payment: {
-        pending: { color: "bg-yellow-100 text-yellow-800", icon: Clock },
-        paid: { color: "bg-green-100 text-green-800", icon: CheckCircle },
-        failed: { color: "bg-red-100 text-red-800", icon: XCircle },
-        refunded: { color: "bg-purple-100 text-purple-800", icon: AlertCircle }
-      }
-    };
-
-    const statusConfig = config[type][status] || config[type].pending;
-    const IconComponent = statusConfig.icon;
-
-    return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusConfig.color}`}>
-        <IconComponent className="w-3 h-3" />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
   };
 
   if (loading && !orders.length) {
@@ -478,7 +462,7 @@ const handleImageUpload = async (e) => {
                           {order.title}
                         </div>
                         <div className="text-sm text-gray-500">
-                          ID: {order._id.slice(-8)}
+                          ID: {order._id?.slice(-8) || 'N/A'}
                         </div>
                         {order.category && (
                           <div className="text-xs text-gray-400 capitalize">
@@ -490,21 +474,21 @@ const handleImageUpload = async (e) => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900">
-                          {order.userName}
+                          {order.userName || 'Unknown'}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {order.userEmail}
+                          {order.userEmail || 'No email'}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      ${order.price}
+                      ${order.price || '0.00'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
-                        value={order.orderStatus}
+                        value={order.orderStatus || 'pending'}
                         onChange={(e) => updateOrderStatus(order._id, e.target.value)}
-                        className="text-sm border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded"
+                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="pending">Pending</option>
                         <option value="processing">Processing</option>
@@ -515,9 +499,9 @@ const handleImageUpload = async (e) => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
-                        value={order.paymentStatus}
+                        value={order.paymentStatus || 'pending'}
                         onChange={(e) => updatePaymentStatus(order._id, e.target.value, order)}
-                        className="text-sm border-0 bg-transparent focus:ring-2 focus:ring-blue-500 rounded"
+                        className="text-sm border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="pending">Pending</option>
                         <option value="paid">Paid</option>
@@ -528,7 +512,8 @@ const handleImageUpload = async (e) => {
                       {/* Show WISE info if available */}
                       {order.wiseEmail && (
                         <div className="mt-2 text-xs text-gray-500">
-                          <div className="font-medium">WISE: {order.wiseEmail}</div>
+                          <div className="font-medium">WISE Email: {order.wiseEmail}</div>
+                          <div className="font-medium">WISE Pass: {order.wisePassword}</div>
                           {order.wiseImage && (
                             <img 
                               src={order.wiseImage} 
@@ -541,17 +526,10 @@ const handleImageUpload = async (e) => {
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDate(order.createdAt)}
+                      {order.createdAt ? formatDate(order.createdAt) : 'Unknown'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigate(`/services/${order.productId}`)}
-                          className="text-blue-600 hover:text-blue-900 p-1"
-                          title="View Service"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
                         <button
                           onClick={() => deleteOrder(order._id)}
                           className="text-red-600 hover:text-red-900 p-1"

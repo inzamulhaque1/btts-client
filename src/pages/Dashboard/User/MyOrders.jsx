@@ -512,7 +512,7 @@ const MyOrders = () => {
                       {order.wiseImage && (
                         <div className="mt-4 sm:mt-6">
                           <label className="block text-xs sm:text-sm font-semibold text-emerald-400 mb-2 sm:mb-3">
-                            Account Proof
+                            Google Authenticator
                           </label>
                           <div
                             className="cursor-pointer"
@@ -527,7 +527,7 @@ const MyOrders = () => {
                             <img
                               src={order.wiseImage}
                               alt="WISE Account Proof"
-                              className="w-full max-w-sm sm:max-w-md h-32 sm:h-48 object-cover rounded-xl sm:rounded-2xl border-2 border-emerald-500/20 hover:border-emerald-500/40 transition-all duration-300 hover:shadow-lg sm:hover:shadow-xl hover:shadow-emerald-500/10 mx-auto"
+                              className=""
                               onError={(e) => {
                                 e.target.style.display = "none";
                                 const errorDiv = document.createElement("div");
