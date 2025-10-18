@@ -72,6 +72,10 @@ const AddServicePage = () => {
 
   const paymentOptions = [
     { id: 'binance', name: 'Binance' },
+    { id: 'bkash', name: 'BKash' },
+    { id: 'nagad', name: 'Nagad' },
+    { id: 'upay', name: 'Upay' },
+    { id: 'roket', name: 'Roket' },
     { id: 'wise', name: 'Wise' },
     { id: 'payoneer', name: 'Payoneer' },
     { id: 'remitly', name: 'Remitly' },

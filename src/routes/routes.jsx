@@ -13,6 +13,8 @@ import AdminOrders from "../pages/Dashboard/Admin/AdminOrders";
 import UnderConstruction from "../components/UnderConstruction";
 import ContactUs from "../pages/Contact/ContactUs";
 import Profile from "../pages/Dashboard/Profile";
+import AllUsers from "../pages/Dashboard/Admin/AllUsers";
+import AllServices from "../pages/Dashboard/Admin/AllServices";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +55,10 @@ export const router = createBrowserRouter([
         element: <AddServicePage></AddServicePage>,
       },
       {
+        path: "/admin-services",
+        element: <AllServices></AllServices>,
+      },
+      {
         path: "/service-details/:id",
         element: <ServiceDetails></ServiceDetails>,
       },
@@ -67,6 +73,10 @@ export const router = createBrowserRouter([
       {
         path: "/admin-orders",
         element: <AdminOrders></AdminOrders>,
+      },
+      {
+        path: "/admin-users",
+        element: <AllUsers></AllUsers>
       },
     ],
   },

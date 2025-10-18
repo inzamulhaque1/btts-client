@@ -1,283 +1,423 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { Phone, Facebook, Twitter, Instagram, Linkedin, Menu, X, LogIn, LogOut, User, ChevronDown } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../provider/AuthProvider';
+import React, { useState, useMemo, useCallback, useEffect } from "react";
+import axios from "axios";
+import {
+  Phone,
+  Facebook,
+  Twitter,
+  Instagram,
+  Linkedin,
+  Menu,
+  X,
+  LogIn,
+  LogOut,
+  User,
+  ChevronDown,
+  ChevronRight,
+  LayoutDashboard,
+  
+  ShoppingCart,
+  UserIcon,
+  Workflow,
+  WifiHigh,
+} from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../provider/AuthProvider";
 
 const Navbar = () => {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-    const location = useLocation();
-    const { currentUser, logout } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isDashboardDropdownOpen, setIsDashboardDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [userRole, setUserRole] = useState(null);
+  
+  const location = useLocation();
+  const { currentUser, logout } = useAuth();
 
-    // Memoized menu items - My Order only shows when user is logged in
-    const menuItems = useMemo(() => {
-        const baseItems = [
-            { name: 'Home', path: '/' },
-            { name: 'About', path: '/about' },
-            { name: 'Services', path: '/services' },
-            { name: 'Contact', path: '/contact' }
-        ];
-        
-        // Add My Order only if user is logged in
-        if (currentUser) {
-            return [
-                ...baseItems.slice(0, 3), // Home, About, Services
-                { name: 'My Order', path: '/my-orders' }, // My Order after Services
-                ...baseItems.slice(3) // Contact
-            ];
-        }
-        
-        return baseItems;
-    }, [currentUser]);
+  // Constants
+  const SOCIAL_ICONS = [Facebook, Twitter, Instagram, Linkedin];
 
-    // Memoized logout handler
-    const handleLogout = useCallback(async () => {
-        try {
-            await logout();
-            setIsUserDropdownOpen(false);
-        } catch (err) {
-            console.error("Logout failed:", err.message);
-        }
-    }, [logout]);
+  // Dashboard submenu based on user role
+  const getDashboardSubmenu = (role) => {
+    const baseItems = [
+      { name: "My Orders", path: "/my-orders", icon: ShoppingCart },
+      { name: "Profile", path: "/profile", icon: UserIcon  },
+    ];
 
-    // WhatsApp contact function
-    const handleContactClick = () => {
-        window.open('https://wa.me/8801732551463', '_blank', 'noopener,noreferrer');
+    if (role === "admin") {
+      return [
+        { name: "Users", path: "/admin-users", icon: User },
+        { name: "Add Service", path: "/add-services", icon: Workflow },
+        { name: "All Service", path: "/admin-services", icon: WifiHigh },
+        { name: "All Orders", path: "/admin-orders", icon: LayoutDashboard },
+        ...baseItems,
+      ];
+    }
+
+    return baseItems;
+  };
+
+  // Effects
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false);
+        setIsDashboardDropdownOpen(false);
+      }
     };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setIsDashboardDropdownOpen(false);
+    };
+    
+    if (isDashboardDropdownOpen) {
+      document.addEventListener("click", handleClickOutside);
+    }
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, [isDashboardDropdownOpen]);
+
+  useEffect(() => {
+    if (currentUser?.uid) {
+      axios
+        .get(`https://btts-server-production.up.railway.app/users/${currentUser.uid}`)
+        .then((response) => setUserRole(response.data.userRole))
+        .catch((error) => {
+          console.error("API error:", error);
+          setUserRole(null);
+        });
+    } else {
+      setUserRole(null);
+    }
+  }, [currentUser?.uid]);
+
+  // Global menu items configuration
+  const menuItems = useMemo(() => {
+    const baseItems = [
+      { name: "Home", path: "/" },
+      { name: "About", path: "/about" },
+      { name: "Services", path: "/services" },
+      { name: "Contact", path: "/contact" },
+    ];
+
+    if (!currentUser) return baseItems;
+
+    const userItems = [...baseItems, 
+        { name: "Dashboard", path: "/dashboard", hasSubmenu: true }];
+    return userItems;
+  }, [currentUser]);
+
+  // Event handlers
+  const handleLogout = useCallback(async () => {
+    try {
+      await logout();
+      setIsMobileMenuOpen(false);
+      setIsDashboardDropdownOpen(false);
+      setUserRole(null);
+    } catch (err) {
+      console.error("Logout failed:", err.message);
+    }
+  }, [logout]);
+
+  const handleContactClick = () => {
+    window.open("https://wa.me/8801732551463", "_blank", "noopener,noreferrer");
+  };
+
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+    setIsDashboardDropdownOpen(false);
+  }, []);
+
+  const toggleDashboardDropdown = useCallback((e) => {
+    e?.stopPropagation();
+    setIsDashboardDropdownOpen(prev => !prev);
+  }, []);
+
+  // Helper Components
+  const TopBar = () => (
+    <div className="bg-slate-900 text-white py-2 px-4">
+      <div className="max-w-7xl mx-auto flex justify-between items-center text-sm">
+        <button
+          onClick={handleContactClick}
+          className="flex items-center gap-2 hover:text-blue-200 transition-all duration-300"
+        >
+          <Phone className="w-4 h-4" />
+          <span className="font-medium">Contact Us</span>
+        </button>
+
+        <div className="flex items-center gap-3">
+          {SOCIAL_ICONS.map((Icon, index) => (
+            <a
+              key={index}
+              href="#"
+              className="text-slate-300 hover:text-cyan-300 transition-all duration-300 hover:scale-110"
+            >
+              <Icon className="w-4 h-4" />
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  const Logo = () => (
+    <Link
+      to="/"
+      className="text-xl font-bold text-white flex items-center gap-2"
+    >
+      <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center">
+        <span className="font-bold text-slate-900">B</span>
+      </div>
+      TheTrustSeller
+    </Link>
+  );
+
+  const MenuItem = ({ item, isMobile = false }) => {
+    const isActive = location.pathname === item.path;
+
+    if (item.hasSubmenu) {
+      return isMobile ? (
+        <MobileDashboardItem 
+          item={item} 
+          isActive={isActive} 
+        />
+      ) : (
+        <DesktopDashboardItem 
+          item={item} 
+          isActive={isActive} 
+        />
+      );
+    }
+
+    const baseClasses = `font-medium transition-all duration-300 ${
+      isActive
+        ? "text-cyan-300 bg-teal-500/20"
+        : "text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10"
+    }`;
+
+    return isMobile ? (
+      <Link
+        to={item.path}
+        className={`block py-3 px-4 rounded-lg ${baseClasses}`}
+        onClick={closeMobileMenu}
+      >
+        {item.name}
+      </Link>
+    ) : (
+      <Link
+        to={item.path}
+        className={`px-4 py-2 rounded-lg ${baseClasses}`}
+      >
+        {item.name}
+      </Link>
+    );
+  };
+
+  const DesktopDashboardItem = ({ item, isActive }) => {
+    const dashboardSubmenu = getDashboardSubmenu(userRole);
 
     return (
-        <div className="w-full font-sans">
-            {/* Top Bar - Hidden but functional phone number */}
-            <div className="bg-slate-900 text-white py-2 px-4 shadow-lg">
-                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-0 text-sm">
-                    {/* Hidden Contact Info - Still clickable */}
-                    <div className="flex items-center gap-4">
-                        <button 
-                            onClick={handleContactClick}
-                            className="flex items-center gap-2 hover:text-blue-200 transition-all duration-300 group opacity-70 hover:opacity-100"
-                            aria-label="Contact via WhatsApp"
-                        >
-                            <Phone className="w-3.5 h-3.5" />
-                            <span className="font-medium group-hover:scale-105 transition-transform">
-                                Contact Us
-                            </span>
-                        </button>
-                    </div>
-                    
-                    {/* Social Icons */}
-                    <div className="flex items-center gap-3">
-                        {[Facebook, Twitter, Instagram, Linkedin].map((Icon, index) => (
-                            <a 
-                                key={index}
-                                href="#" 
-                                className="text-slate-300 hover:text-cyan-300 transition-all duration-300 hover:scale-110 p-1 rounded"
-                                aria-label={Icon.name}
-                            >
-                                <Icon className="w-3.5 h-3.5" />
-                            </a>
-                        ))}
-                    </div>
-                </div>
-            </div>
+      <div className="relative">
+        <button
+          onClick={toggleDashboardDropdown}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+            isActive
+              ? "text-purple-300 bg-purple-500/20"
+              : "text-slate-300 hover:text-purple-200 hover:bg-purple-500/10"
+          }`}
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          {item.name}
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              isDashboardDropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
 
-            {/* Main Navbar */}
-            <nav className="sticky top-0 z-50 shadow-xl backdrop-blur-sm bg-opacity-95 bg-slate-800">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        {/* Logo */}
-                        <div className="flex-shrink-0">
-                            <Link 
-                                to="/" 
-                                className="text-xl sm:text-2xl font-bold hover:scale-105 transition-transform duration-300 flex items-center gap-2"
-                            >
-                                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-teal-500">
-                                    <span className="font-bold text-slate-900">
-                                        B
-                                    </span>
-                                </div>
-                                <span className="text-slate-100">
-                                    TheTrustSeller
-                                </span>
-                            </Link>
-                        </div>
-
-                        {/* Desktop Menu Items */}
-                        <div className="hidden lg:flex items-center space-x-1">
-                            {menuItems.map((item) => {
-                                const isActive = location.pathname === item.path;
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 text-sm relative group ${
-                                            isActive 
-                                                ? 'text-cyan-300 font-semibold' 
-                                                : 'text-slate-300 hover:text-cyan-200'
-                                        }`}
-                                    >
-                                        {item.name}
-                                        {isActive && (
-                                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-6 h-0.5 rounded-full bg-teal-500"></div>
-                                        )}
-                                        <div 
-                                            className={`absolute inset-0 rounded-lg transition-opacity duration-300 -z-10 ${
-                                                isActive ? 'opacity-20' : 'opacity-0 group-hover:opacity-10'
-                                            } bg-teal-500`}
-                                        ></div>
-                                    </Link>
-                                );
-                            })}
-                        </div>
-
-                        {/* User Section */}
-                        <div className="flex items-center gap-3">
-                            {currentUser ? (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                                        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300 hover:scale-105 group bg-slate-900"
-                                    >
-                                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold bg-teal-500 text-slate-900">
-                                            {currentUser.displayName?.[0]?.toUpperCase() || currentUser.email?.[0]?.toUpperCase() || 'U'}
-                                        </div>
-                                        <span className="hidden sm:block font-medium max-w-24 truncate text-slate-100">
-                                            {currentUser.displayName || currentUser.email?.split('@')[0]}
-                                        </span>
-                                        <ChevronDown 
-                                            className={`w-4 h-4 transition-transform duration-300 ${
-                                                isUserDropdownOpen ? 'rotate-180' : ''
-                                            } text-slate-100`}
-                                        />
-                                    </button>
-
-                                    {/* User Dropdown */}
-                                    {isUserDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-xl border backdrop-blur-sm py-1 z-50 bg-slate-900 border-teal-500/25 animate-in fade-in slide-in-from-top-2 duration-200">
-                                            <div className="px-4 py-2 border-b border-teal-500/25">
-                                                <p className="text-sm font-medium truncate text-slate-100">
-                                                    {currentUser.displayName || 'User'}
-                                                </p>
-                                                <p className="text-xs truncate text-slate-400">
-                                                    {currentUser.email}
-                                                </p>
-                                            </div>
-                                            <Link
-                                                to="/profile"
-                                                className="flex items-center gap-2 px-4 py-2 text-sm transition-colors duration-200 hover:bg-teal-500/20 text-slate-100"
-                                                onClick={() => setIsUserDropdownOpen(false)}
-                                            >
-                                                <User className="w-4 h-4" />
-                                                Profile
-                                            </Link>
-                                            <Link
-                                                to="/orders"
-                                                className="flex items-center gap-2 px-4 py-2 text-sm transition-colors duration-200 hover:bg-teal-500/20 text-slate-100"
-                                                onClick={() => setIsUserDropdownOpen(false)}
-                                            >
-                                                <User className="w-4 h-4" />
-                                                My Orders
-                                            </Link>
-                                            <button
-                                                onClick={handleLogout}
-                                                className="flex items-center gap-2 w-full px-4 py-2 text-sm transition-colors duration-200 hover:bg-teal-500/20 text-slate-100"
-                                            >
-                                                <LogOut className="w-4 h-4" />
-                                                Logout
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <Link 
-                                    to="/login"
-                                    className="hidden sm:flex items-center gap-2 px-6 py-2.5 rounded-full font-medium transition-all duration-300 hover:scale-105 shadow-lg group bg-teal-500 text-slate-900"
-                                >
-                                    <LogIn className="w-4 h-4 transition-transform group-hover:scale-110" />
-                                    <span className="font-semibold">Login</span>
-                                </Link>
-                            )}
-
-                            {/* Mobile Menu Button */}
-                            <button
-                                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                                className="lg:hidden p-2 rounded-lg transition-all duration-300 hover:bg-teal-500/20 text-slate-100 active:scale-95"
-                                aria-label="Toggle menu"
-                            >
-                                {isMobileMenuOpen ? 
-                                    <X className="w-6 h-6 transition-transform duration-300 rotate-90" /> : 
-                                    <Menu className="w-6 h-6 transition-transform duration-300" />
-                                }
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile Menu - Smoother animation */}
-                <div 
-                    className={`lg:hidden overflow-hidden transition-all duration-500 ease-out bg-slate-900 ${
-                        isMobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
-                    }`}
-                    style={{
-                        transitionProperty: 'max-height, opacity',
-                        transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                    }}
-                >
-                    <div className="border-t py-2 border-teal-500/25">
-                        <div className="px-4 space-y-1">
-                            {menuItems.map((item) => {
-                                const isActive = location.pathname === item.path;
-                                return (
-                                    <Link
-                                        key={item.path}
-                                        to={item.path}
-                                        className={`block py-3 px-4 rounded-lg transition-all duration-300 font-medium relative transform hover:translate-x-1 ${
-                                            isActive
-                                                ? 'text-cyan-300 bg-teal-500/20 font-semibold'
-                                                : 'text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10'
-                                        }`}
-                                        onClick={() => {
-                                            setIsMobileMenuOpen(false);
-                                            // Small delay to show the click feedback
-                                            setTimeout(() => setIsMobileMenuOpen(false), 150);
-                                        }}
-                                    >
-                                        {item.name}
-                                        {isActive && (
-                                            <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-1 h-6 rounded-full bg-teal-500"></div>
-                                        )}
-                                    </Link>
-                                );
-                            })}
-                            
-
-                            
-                            {!currentUser && (
-                                <Link 
-                                    to="/login"
-                                    className="flex items-center justify-center gap-2 w-full py-3 rounded-lg font-medium transition-all duration-300 bg-teal-500 text-slate-900 hover:bg-teal-600 active:scale-95"
-                                    onClick={() => {
-                                        setIsMobileMenuOpen(false);
-                                        setTimeout(() => setIsMobileMenuOpen(false), 150);
-                                    }}
-                                >
-                                    <LogIn className="w-4 h-4" />
-                                    <span className="font-semibold">Login</span>
-                                </Link>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </nav>
-
-            {/* Overlay for dropdown */}
-            {isUserDropdownOpen && (
-                <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsUserDropdownOpen(false)}
-                />
-            )}
-        </div>
+        {isDashboardDropdownOpen && (
+          <div className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-slate-900 border border-purple-500/25 py-1 z-50">
+            {dashboardSubmenu.map((subItem) => (
+              <Link
+                key={subItem.path}
+                to={subItem.path}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:text-purple-300 hover:bg-purple-500/20"
+                onClick={() => setIsDashboardDropdownOpen(false)}
+              >
+                <subItem.icon className="w-4 h-4" />
+                {subItem.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     );
+  };
+
+  const MobileDashboardItem = ({ item, isActive }) => {
+    const dashboardSubmenu = getDashboardSubmenu(userRole);
+
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={toggleDashboardDropdown}
+          className={`flex items-center justify-between w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
+            isActive
+              ? "text-purple-300 bg-purple-500/20"
+              : "text-slate-300 hover:text-purple-200 hover:bg-purple-500/10"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <LayoutDashboard className="w-4 h-4" />
+            {item.name}
+          </div>
+          <ChevronRight
+            className={`w-4 h-4 transition-transform ${
+              isDashboardDropdownOpen ? "rotate-90" : ""
+            }`}
+          />
+        </button>
+
+        {isDashboardDropdownOpen && (
+          <div className="pl-6 space-y-1">
+            {dashboardSubmenu.map((subItem) => (
+              <Link
+                key={subItem.path}
+                to={subItem.path}
+                className={`flex items-center gap-2 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
+                  location.pathname === subItem.path
+                    ? "text-purple-300 bg-purple-500/20"
+                    : "text-slate-300 hover:text-purple-200 hover:bg-purple-500/10"
+                }`}
+                onClick={closeMobileMenu}
+              >
+                <subItem.icon className="w-4 h-4" />
+                {subItem.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const DesktopMenu = () => (
+    <div className="hidden lg:flex items-center space-x-2">
+      {menuItems.map((item) => (
+        <MenuItem key={item.path} item={item} />
+      ))}
+    </div>
+  );
+
+  const MobileMenu = () => (
+    <div
+      className={`lg:hidden bg-slate-900 transition-all duration-300 ${
+        isMobileMenuOpen
+          ? "max-h-96 opacity-100"
+          : "max-h-0 opacity-0 overflow-hidden"
+      }`}
+    >
+      <div className="px-4 py-2 space-y-1">
+        {menuItems.map((item) => (
+          <MenuItem key={item.path} item={item} isMobile={true} />
+        ))}
+
+        {currentUser ? (
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 w-full rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all duration-300 font-medium"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+      ) : (
+        <Link
+          to="/login"
+          className="flex items-center gap-2 px-4 py-2 w-full rounded-lg bg-teal-500 text-slate-900 hover:bg-teal-600 transition-all duration-300 font-semibold"
+        >
+          <LogIn className="w-4 h-4" />
+          Login
+        </Link>
+      )}
+      </div>
+    </div>
+  );
+
+  const MobileMenuButton = () => (
+    <button
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      className="lg:hidden p-2 rounded-lg text-white hover:bg-teal-500/20 transition-all duration-300"
+    >
+      {isMobileMenuOpen ? (
+        <X className="w-6 h-6" />
+      ) : (
+        <Menu className="w-6 h-6" />
+      )}
+    </button>
+  );
+
+  const DesktopAuthButtons = () => (
+    <div className="hidden lg:flex items-center gap-3">
+      {currentUser ? (
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-all duration-300 font-medium"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
+      ) : (
+        <Link
+          to="/login"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-500 text-slate-900 hover:bg-teal-600 transition-all duration-300 font-semibold"
+        >
+          <LogIn className="w-4 h-4" />
+          Login
+        </Link>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="w-full font-sans">
+      <TopBar />
+      
+      <nav
+        className={`sticky top-0 z-50 bg-slate-800 shadow-xl transition-all ${
+          isScrolled ? "bg-slate-800/95 backdrop-blur-sm" : "bg-slate-800"
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Logo />
+            
+            <DesktopMenu />
+            
+            <div className="flex items-center gap-3">
+              <DesktopAuthButtons />
+              <MobileMenuButton />
+            </div>
+          </div>
+        </div>
+
+        <MobileMenu />
+      </nav>
+
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          onClick={closeMobileMenu}
+        />
+      )}
+    </div>
+  );
 };
 
 export default Navbar;

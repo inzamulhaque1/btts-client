@@ -19,6 +19,8 @@ import {
   AlertCircle,
   Edit
 } from "lucide-react";
+import { usePrivateRoute } from "../../../components/usePrivateRoute";
+
 
 const AdminOrders = () => {
   const navigate = useNavigate();
@@ -40,6 +42,7 @@ const AdminOrders = () => {
     wisePassword: "",
     wiseImage: null
   });
+  usePrivateRoute(["admin"]);
 
   // Fetch orders
   const fetchOrders = async () => {
@@ -52,7 +55,11 @@ const AdminOrders = () => {
         if (filters[key]) params.append(key, filters[key]);
       });
 
-      const response = await axios.get(`https://btts-server-production.up.railway.app/admin/orders?${params}`);
+      const response = await axios.get(`https://btts-server-production.up.railway.app/admin/orders?${params}`, {
+      headers: {
+        'x-api-key': 'admin123456' // Use your actual admin API key
+      }
+    });
       setOrders(response.data.orders);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
