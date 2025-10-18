@@ -170,12 +170,10 @@ const Navbar = () => {
   const Logo = () => (
     <Link
       to="/"
-      className="text-xl font-bold text-white flex items-center gap-2"
+      className="text-xl font-bold text-white"
     >
-      <div className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center">
-        <span className="font-bold text-slate-900">B</span>
-      </div>
-      TheTrustSeller
+      
+        <span className="font-bold text-cyan-500">b</span>TheTrustSeller
     </Link>
   );
 

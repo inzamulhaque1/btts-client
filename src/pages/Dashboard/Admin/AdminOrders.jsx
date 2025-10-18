@@ -40,6 +40,11 @@ const AdminOrders = () => {
     wisePassword: "",
     wiseImage: null
   });
+  const [duplicateCheck, setDuplicateCheck] = useState({
+    emailExists: false,
+    passwordExists: false,
+    exactMatch: false
+  });
   usePrivateRoute(["admin"]);
 
   // API configuration
@@ -90,6 +95,53 @@ const AdminOrders = () => {
     fetchStats();
   }, [filters]);
 
+  // Check for duplicate WISE credentials
+  const checkDuplicateWiseCredentials = (email, password) => {
+    if (!email && !password) {
+      setDuplicateCheck({ emailExists: false, passwordExists: false, exactMatch: false });
+      return;
+    }
+
+    const existingOrders = orders.filter(order => 
+      order.paymentStatus === 'paid' && 
+      (order.wiseEmail || order.wisePassword)
+    );
+
+    const emailExists = existingOrders.some(order => 
+      order.wiseEmail?.toLowerCase() === email?.toLowerCase()
+    );
+
+    const passwordExists = existingOrders.some(order => 
+      order.wisePassword === password
+    );
+
+    const exactMatch = existingOrders.some(order => 
+      order.wiseEmail?.toLowerCase() === email?.toLowerCase() && 
+      order.wisePassword === password
+    );
+
+    setDuplicateCheck({
+      emailExists,
+      passwordExists,
+      exactMatch
+    });
+  };
+
+  // Handle WISE form changes with duplicate checking
+  const handleWiseFormChange = (field, value) => {
+    setWiseForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+
+    // Check for duplicates when both fields have values
+    if (field === 'wiseEmail') {
+      checkDuplicateWiseCredentials(value, wiseForm.wisePassword);
+    } else if (field === 'wisePassword') {
+      checkDuplicateWiseCredentials(wiseForm.wiseEmail, value);
+    }
+  };
+
   // Handle filter changes
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
@@ -120,6 +172,8 @@ const AdminOrders = () => {
     try {
       if (newStatus === "paid") {
         setSelectedOrder(order);
+        setWiseForm({ wiseEmail: "", wisePassword: "", wiseImage: null });
+        setDuplicateCheck({ emailExists: false, passwordExists: false, exactMatch: false });
         setShowWiseModal(true);
       } else {
         await axios.put(`${API_CONFIG.baseURL}/admin/orders/${orderId}`, {
@@ -141,6 +195,22 @@ const AdminOrders = () => {
     if (!wiseForm.wiseEmail || !wiseForm.wisePassword) {
       alert("Please fill in both WISE email and password");
       return;
+    }
+
+    // Check for exact duplicate before submitting
+    checkDuplicateWiseCredentials(wiseForm.wiseEmail, wiseForm.wisePassword);
+    
+    if (duplicateCheck.exactMatch) {
+      const confirmOverride = window.confirm(
+        "⚠️ WARNING: These exact WISE credentials already exist in another order!\n\n" +
+        "Email: " + wiseForm.wiseEmail + "\n" +
+        "Password: " + wiseForm.wisePassword + "\n\n" +
+        "Are you sure you want to use the same credentials again?"
+      );
+      
+      if (!confirmOverride) {
+        return;
+      }
     }
 
     try {
@@ -167,6 +237,7 @@ const AdminOrders = () => {
       setShowWiseModal(false);
       setSelectedOrder(null);
       setWiseForm({ wiseEmail: "", wisePassword: "", wiseImage: null });
+      setDuplicateCheck({ emailExists: false, passwordExists: false, exactMatch: false });
       
       alert("Order updated successfully with WISE credentials!");
     } catch (err) {
@@ -255,6 +326,38 @@ const AdminOrders = () => {
       year: 'numeric'
     });
   };
+
+  // Get duplicate warning message
+  const getDuplicateWarning = () => {
+    if (duplicateCheck.exactMatch) {
+      return {
+        type: "error",
+        message: "⚠️ These exact credentials already exist in another order!",
+        details: "Email and password combination is identical to an existing order."
+      };
+    } else if (duplicateCheck.emailExists && duplicateCheck.passwordExists) {
+      return {
+        type: "warning",
+        message: "⚠️ Both email and password exist in different orders",
+        details: "This email exists in one order and this password exists in another."
+      };
+    } else if (duplicateCheck.emailExists) {
+      return {
+        type: "warning",
+        message: "⚠️ This email already exists in another order",
+        details: "Consider using a different email address."
+      };
+    } else if (duplicateCheck.passwordExists) {
+      return {
+        type: "warning",
+        message: "⚠️ This password already exists in another order",
+        details: "Consider using a different password."
+      };
+    }
+    return null;
+  };
+
+  const duplicateWarning = getDuplicateWarning();
 
   if (loading && !orders.length) {
     return (
@@ -587,124 +690,189 @@ const AdminOrders = () => {
           </div>
         )}
 
-        {/* WISE Credentials Modal */}
-        {showWiseModal && selectedOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-lg max-w-md w-full">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Add WISE Credentials
-                </h2>
-                <button
-                  onClick={() => setShowWiseModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <XCircle className="w-6 h-6" />
-                </button>
-              </div>
+{/* WISE Credentials Modal */}
+{showWiseModal && selectedOrder && (
+  <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col">
+      {/* Header - Fixed */}
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 flex-shrink-0">
+        <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+          Add WISE Credentials
+        </h2>
+        <button
+          onClick={() => {
+            setShowWiseModal(false);
+            setDuplicateCheck({ emailExists: false, passwordExists: false, exactMatch: false });
+          }}
+          className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+        >
+          <XCircle className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
+      </div>
 
-              <div className="p-6 space-y-4">
-                {/* Order Info */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Order Details</h3>
-                  <p className="text-sm text-gray-600">{selectedOrder.title}</p>
-                  <p className="text-sm text-gray-600">Customer: {selectedOrder.userName}</p>
-                  <p className="text-sm text-gray-600">Price: ${selectedOrder.price}</p>
-                </div>
+      {/* Scrollable Content - Flexible */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4">
+          {/* Order Info */}
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+            <h3 className="font-semibold text-gray-900 text-sm sm:text-base mb-2">Order Details</h3>
+            <div className="space-y-1 text-xs sm:text-sm text-gray-600">
+              <p className="break-words">{selectedOrder.title}</p>
+              <p>Customer: {selectedOrder.userName}</p>
+              <p>Price: ${selectedOrder.price}</p>
+            </div>
+          </div>
 
-                {/* WISE Email */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    WISE Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={wiseForm.wiseEmail}
-                    onChange={(e) => setWiseForm(prev => ({
-                      ...prev,
-                      wiseEmail: e.target.value
-                    }))}
-                    placeholder="Enter WISE email address"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* WISE Password */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    WISE Password *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={wiseForm.wisePassword}
-                    onChange={(e) => setWiseForm(prev => ({
-                      ...prev,
-                      wisePassword: e.target.value
-                    }))}
-                    placeholder="Enter WISE password"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {/* Image Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Upload Proof Image
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                  {wiseForm.wiseImage && (
-                    <div className="mt-2">
-                      <img
-                        src={wiseForm.wiseImage}
-                        alt="Preview"
-                        className="h-20 object-cover rounded-lg"
-                      />
-                    </div>
+          {/* Duplicate Warning */}
+          {duplicateWarning && (
+            <div className={`border rounded-lg p-3 ${
+              duplicateWarning.type === 'error' 
+                ? 'bg-red-50 border-red-200' 
+                : 'bg-yellow-50 border-yellow-200'
+            }`}>
+              <div className="flex items-start gap-2">
+                <AlertCircle className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
+                  duplicateWarning.type === 'error' ? 'text-red-600' : 'text-yellow-600'
+                }`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-sm font-medium ${
+                    duplicateWarning.type === 'error' ? 'text-red-800' : 'text-yellow-800'
+                  }`}>
+                    {duplicateWarning.message}
+                  </p>
+                  <p className={`text-xs mt-1 ${
+                    duplicateWarning.type === 'error' ? 'text-red-700' : 'text-yellow-700'
+                  }`}>
+                    {duplicateWarning.details}
+                  </p>
+                  {duplicateCheck.exactMatch && (
+                    <p className="text-xs text-red-700 mt-1 font-semibold">
+                      This will create duplicate credentials!
+                    </p>
                   )}
-                </div>
-
-                {/* Security Notice */}
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-yellow-800 font-medium">Security Notice</p>
-                      <p className="text-xs text-yellow-700 mt-1">
-                        These credentials will be securely delivered to the customer. 
-                        Make sure the information is accurate before submitting.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    onClick={() => setShowWiseModal(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleWiseCredentialsSubmit}
-                    disabled={!wiseForm.wiseEmail || !wiseForm.wisePassword}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Approve & Deliver
-                  </button>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* WISE Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              WISE Email *
+            </label>
+            <input
+              type="email"
+              required
+              value={wiseForm.wiseEmail}
+              onChange={(e) => handleWiseFormChange('wiseEmail', e.target.value)}
+              placeholder="Enter WISE email"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {duplicateCheck.emailExists && (
+              <p className="text-xs text-yellow-600 mt-1">
+                This email is already used in another order
+              </p>
+            )}
           </div>
-        )}
+
+          {/* WISE Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              WISE Password *
+            </label>
+            <input
+              type="text"
+              required
+              value={wiseForm.wisePassword}
+              onChange={(e) => handleWiseFormChange('wisePassword', e.target.value)}
+              placeholder="Enter WISE password"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {duplicateCheck.passwordExists && (
+              <p className="text-xs text-yellow-600 mt-1">
+                This password is already used in another order
+              </p>
+            )}
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Upload Proof Image (Optional)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            {wiseForm.wiseImage && (
+              <div className="mt-3 flex flex-col items-center">
+                <div className="relative">
+                  <img
+                    src={wiseForm.wiseImage}
+                    alt="Preview"
+                    className="h-32 w-32 object-cover rounded-lg border-2 border-gray-300"
+                  />
+                  <button
+                    onClick={() => setWiseForm(prev => ({ ...prev, wiseImage: null }))}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  Click the X to remove image
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Security Notice */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm text-blue-800 font-medium">Security Notice</p>
+                <p className="text-xs text-blue-700 mt-1">
+                  These credentials will be securely delivered to the customer. 
+                  Make sure the information is accurate before submitting.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer - Fixed */}
+      <div className="border-t border-gray-200 bg-white p-4 sm:p-6 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => {
+              setShowWiseModal(false);
+              setDuplicateCheck({ emailExists: false, passwordExists: false, exactMatch: false });
+            }}
+            className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleWiseCredentialsSubmit}
+            disabled={!wiseForm.wiseEmail || !wiseForm.wisePassword}
+            className={`flex-1 px-4 py-3 rounded-lg text-white transition-colors font-semibold flex items-center justify-center gap-2 text-sm ${
+              duplicateCheck.exactMatch 
+                ? 'bg-red-600 hover:bg-red-700 disabled:bg-red-400' 
+                : 'bg-green-600 hover:bg-green-700 disabled:bg-green-400'
+            } disabled:cursor-not-allowed`}
+          >
+            <CheckCircle className="w-4 h-4" />
+            {duplicateCheck.exactMatch ? 'Override & Deliver' : 'Approve & Deliver'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
       </div>
     </div>
   );

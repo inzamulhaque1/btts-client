@@ -17,40 +17,20 @@ import {
 } from 'lucide-react';
 
 const ContactUs = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
-  const [focusedField, setFocusedField] = useState(null);
-
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleSubmit = () => {
-    console.log('Form submitted:', formData);
-    // Handle form submission here
-    alert('Thank you for contacting us! We will get back to you soon.');
-    setFormData({ name: '', email: '', subject: '', message: '' });
-  };
+  const [hoveredCard, setHoveredCard] = useState(null);
 
   const contactInfo = [
     {
       icon: Mail,
       title: 'Email Us',
-      content: 'pookling.jam@gmail.com',
+      content: 'support@bthebestseller.store',
       subContent: 'We reply within 24 hours',
       gradient: 'from-teal-500 to-cyan-500'
     },
     {
       icon: Phone,
       title: 'Call Us',
-      content: '+8801728005274',
+      content: '+8801732551463',
       subContent: 'Mon-Fri from 8am to 6pm',
       gradient: 'from-cyan-500 to-blue-500'
     },
@@ -274,171 +254,125 @@ const ContactUs = () => {
           </div>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid lg:grid-cols-2 gap-12 mb-20">
-          {/* Contact Form */}
-          <div className="opacity-0 animate-slide-in-left delay-400">
-            <div className="glass-effect border border-teal-500/30 rounded-3xl p-8 hover:border-teal-400/50 transition-all duration-500 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              
-              <div className="relative">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="p-3 rounded-xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20 group-hover:scale-110 transition-transform duration-300">
-                    <MessageSquare className="w-6 h-6 text-teal-400" />
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white">
-                    Send Us a Message
-                  </h2>
+        {/* Main Content - Contact Information Cards */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+          {contactInfo.map((info, index) => {
+            const Icon = info.icon;
+            return (
+              <div
+                key={index}
+                onMouseEnter={() => setHoveredCard(index)}
+                onMouseLeave={() => setHoveredCard(null)}
+                className={`group glass-effect border border-teal-500/30 rounded-2xl p-6 hover-lift hover:border-teal-400/60 hover:shadow-2xl hover:shadow-teal-500/30 transition-all duration-500 relative overflow-hidden cursor-pointer opacity-0 animate-scale-in delay-${400 + index * 100}`}
+              >
+                {/* Animated gradient background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                
+                {/* Particle effect on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                  <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-teal-400 rounded-full animate-bounce-subtle"></div>
+                  <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-cyan-400 rounded-full animate-bounce-subtle delay-200"></div>
                 </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('name')}
-                      onBlur={() => setFocusedField(null)}
-                      className="w-full px-4 py-3 rounded-xl glass-effect border border-teal-500/30 text-white placeholder-slate-500 focus:border-teal-400/70 focus:outline-none input-glow transition-all duration-300"
-                      placeholder="John Doe"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('email')}
-                      onBlur={() => setFocusedField(null)}
-                      className="w-full px-4 py-3 rounded-xl glass-effect border border-teal-500/30 text-white placeholder-slate-500 focus:border-teal-400/70 focus:outline-none input-glow transition-all duration-300"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                      Subject
-                    </label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('subject')}
-                      onBlur={() => setFocusedField(null)}
-                      className="w-full px-4 py-3 rounded-xl glass-effect border border-teal-500/30 text-white placeholder-slate-500 focus:border-teal-400/70 focus:outline-none input-glow transition-all duration-300"
-                      placeholder="How can we help you?"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-slate-300 mb-2">
-                      Message
-                    </label>
-                    <textarea
-                      name="message"
-                      value={formData.message}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('message')}
-                      onBlur={() => setFocusedField(null)}
-                      rows="5"
-                      className="w-full px-4 py-3 rounded-xl glass-effect border border-teal-500/30 text-white placeholder-slate-500 focus:border-teal-400/70 focus:outline-none input-glow transition-all duration-300 resize-none"
-                      placeholder="Tell us more about your inquiry..."
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSubmit}
-                    className="group w-full px-8 py-4 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-lg hover:from-teal-400 hover:to-cyan-400 hover:scale-105 hover:shadow-2xl hover:shadow-teal-500/50 transition-all duration-300 flex items-center justify-center gap-3 relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 animate-shimmer"></div>
-                    <span className="relative">Send Message</span>
-                    <Send className="w-5 h-5 relative group-hover:translate-x-1 transition-transform duration-300" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div className="opacity-0 animate-slide-in-right delay-500">
-            <div className="space-y-6">
-              {contactInfo.map((info, index) => {
-                const Icon = info.icon;
-                return (
-                  <div
-                    key={index}
-                    className={`group glass-effect border border-teal-500/30 rounded-2xl p-6 hover-lift hover:border-teal-400/60 hover:shadow-xl hover:shadow-teal-500/20 transition-all duration-500 relative overflow-hidden opacity-0 animate-scale-in delay-${600 + index * 100}`}
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/10 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    
-                    <div className="relative flex items-start gap-4">
-                      <div className={`p-4 rounded-xl bg-gradient-to-br ${info.gradient} bg-opacity-20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 flex-shrink-0`}>
-                        <Icon className="w-6 h-6 text-teal-400 group-hover:text-teal-300 transition-colors duration-300" />
+                
+                <div className="relative">
+                  {/* Icon with rotating border */}
+                  <div className="mb-6 flex justify-center">
+                    <div className="relative">
+                      <div className={`absolute inset-0 bg-gradient-to-br ${info.gradient} rounded-xl blur-lg opacity-50 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                      <div className={`relative p-5 rounded-xl bg-gradient-to-br ${info.gradient} bg-opacity-20 group-hover:scale-110 group-hover:rotate-12 transition-all duration-500`}>
+                        <Icon className="w-8 h-8 text-teal-400 group-hover:text-teal-300 transition-colors duration-300" />
                       </div>
-                      
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1 group-hover:text-teal-300 transition-colors duration-300">
-                          {info.title}
-                        </h3>
-                        <p className="text-slate-300 font-semibold mb-1">
-                          {info.content}
-                        </p>
-                        <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors duration-300">
-                          {info.subContent}
-                        </p>
-                      </div>
-
-                      <Sparkles className="w-4 h-4 text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute top-4 right-4" />
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  
+                  {/* Content */}
+                  <div className="text-center space-y-2">
+                    <h3 className="text-xl font-bold text-white mb-2 group-hover:text-teal-300 transition-colors duration-300">
+                      {info.title}
+                    </h3>
+                    <p className="text-slate-200 font-semibold text-sm mb-1 group-hover:scale-105 transition-transform duration-300">
+                      {info.content}
+                    </p>
+                    <p className="text-xs text-slate-400 group-hover:text-slate-300 transition-colors duration-300">
+                      {info.subContent}
+                    </p>
+                  </div>
+
+                  {/* Sparkle effect */}
+                  <Sparkles className="w-5 h-5 text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute top-2 right-2 animate-pulse" />
+                  
+                  {/* Bottom glow line */}
+                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-teal-400 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Social Links & Additional Info */}
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Social Media */}
-          <div className="opacity-0 animate-fade-in-up delay-700">
-            <div className="glass-effect border border-teal-500/30 rounded-2xl p-8 hover:border-teal-400/50 transition-all duration-500 text-center relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        {/* Enhanced Social Links & Info Section */}
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Social Media - Now Larger */}
+          <div className="md:col-span-2 opacity-0 animate-fade-in-up delay-700">
+            <div className="glass-effect border border-teal-500/30 rounded-3xl p-10 hover:border-teal-400/50 transition-all duration-500 relative overflow-hidden group h-full">
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              
+              {/* Animated corner accents */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-bl-full blur-2xl group-hover:bg-teal-500/20 transition-colors duration-500"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/10 rounded-tr-full blur-2xl group-hover:bg-cyan-500/20 transition-colors duration-500"></div>
               
               <div className="relative">
-                <div className="inline-block mb-6">
-                  <Globe className="w-12 h-12 text-teal-400 animate-float" />
+                <div className="flex items-center justify-between mb-8">
+                  <div>
+                    <h3 className="text-3xl font-bold text-white mb-2">
+                      Connect With Us
+                    </h3>
+                    <p className="text-slate-400">
+                      Follow us on social media for updates & insights
+                    </p>
+                  </div>
+                  <Globe className="w-16 h-16 text-teal-400 animate-float opacity-30 group-hover:opacity-100 transition-opacity duration-500" />
                 </div>
                 
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  Follow Us
-                </h3>
-                
-                <p className="text-slate-400 mb-6">
-                  Stay connected with us on social media
-                </p>
-                
-                <div className="flex items-center justify-center gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {socialLinks.map((social, index) => {
                     const Icon = social.icon;
                     return (
                       <button
                         key={index}
-                        className={`p-4 rounded-xl glass-effect border border-teal-500/30 hover:border-teal-400/60 ${social.color} hover:scale-125 hover:shadow-lg hover:shadow-teal-500/30 transition-all duration-300 group/icon`}
+                        className={`group/social glass-effect border border-teal-500/30 rounded-2xl p-6 hover:border-teal-400/60 ${social.color} hover:scale-110 hover:shadow-2xl hover:shadow-teal-500/30 transition-all duration-500 relative overflow-hidden`}
                       >
-                        <Icon className="w-6 h-6 text-slate-400 group-hover/icon:text-current transition-colors duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/10 to-blue-500/0 opacity-0 group-hover/social:opacity-100 transition-opacity duration-500"></div>
+                        
+                        <div className="relative flex flex-col items-center gap-3">
+                          <Icon className="w-8 h-8 text-slate-400 group-hover/social:text-current group-hover/social:scale-125 transition-all duration-300" />
+                          <span className="text-xs font-semibold text-slate-400 group-hover/social:text-white transition-colors duration-300">
+                            {social.label}
+                          </span>
+                        </div>
+                        
+                        {/* Ripple effect */}
+                        <div className="absolute inset-0 rounded-2xl opacity-0 group-hover/social:opacity-100 transition-opacity duration-500">
+                          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-teal-400/10 rounded-full animate-ping"></div>
+                        </div>
                       </button>
                     );
                   })}
+                </div>
+                
+                {/* Additional info */}
+                <div className="mt-8 flex items-center justify-center gap-6 text-sm text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Daily Updates</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Exclusive Content</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-teal-400" />
+                    <span>Community Support</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -446,27 +380,38 @@ const ContactUs = () => {
 
           {/* Response Time */}
           <div className="opacity-0 animate-fade-in-up delay-800">
-            <div className="glass-effect border border-teal-500/30 rounded-2xl p-8 hover:border-teal-400/50 transition-all duration-500 text-center relative overflow-hidden group h-full flex flex-col justify-center">
-              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/5 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="glass-effect border border-teal-500/30 rounded-3xl p-8 hover:border-teal-400/50 transition-all duration-500 relative overflow-hidden group h-full flex flex-col justify-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/5 to-blue-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               
-              <div className="relative">
+              {/* Animated circle background */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-teal-500/5 rounded-full blur-2xl group-hover:bg-teal-500/10 transition-colors duration-500"></div>
+              
+              <div className="relative text-center">
                 <div className="inline-block mb-6 relative">
-                  <div className="absolute inset-0 bg-teal-500/30 blur-xl rounded-full animate-pulse-glow"></div>
-                  <Clock className="relative w-12 h-12 text-teal-400 group-hover:rotate-180 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-teal-500/30 blur-2xl rounded-full animate-pulse-glow"></div>
+                  <div className="relative p-4 rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/20">
+                    <Clock className="relative w-14 h-14 text-teal-400 group-hover:rotate-180 transition-transform duration-700" />
+                  </div>
                 </div>
                 
-                <h3 className="text-2xl font-bold text-white mb-4">
+                <h3 className="text-2xl font-bold text-white mb-3">
                   Quick Response
                 </h3>
                 
-                <p className="text-slate-400 mb-4">
+                <p className="text-slate-400 mb-6 text-sm">
                   We typically respond within
                 </p>
                 
-                <div className="inline-block px-6 py-3 rounded-full bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border border-teal-400/40">
-                  <span className="text-3xl font-bold bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
-                    24 Hours
+                <div className="inline-block px-8 py-4 rounded-2xl bg-gradient-to-r from-teal-500/20 to-cyan-500/20 border border-teal-400/40 group-hover:scale-110 group-hover:border-teal-400/70 transition-all duration-500">
+                  <span className="text-4xl font-bold bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">
+                    24
                   </span>
+                  <span className="block text-sm text-slate-400 mt-1">Hours</span>
+                </div>
+                
+                <div className="mt-6 flex items-center justify-center gap-2 text-xs text-teal-400">
+                  <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
+                  <span>Available 24/7</span>
                 </div>
               </div>
             </div>

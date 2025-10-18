@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom';
 
 const Hero = () => {
   const features = [
-    { icon: Globe, text: 'All Country Wise' },
-    { icon: FileText, text: 'Editable Files' },
-    { icon: Server, text: 'VPS Services' },
-    { icon: ServerCogIcon, text: 'PROXY IP' },
-    { icon: Award, text: 'All Country SSN' }
+    { icon: Globe, text: 'All Country Wise', path: '/services' },
+    { icon: FileText, text: 'Editable Files', path: '/services' },
+    { icon: Server, text: 'VPS Services', path: '/services' },
+    { icon: ServerCogIcon, text: 'PROXY IP', path: 'https://t.me/btheproxifier_bot'},
+    { icon: Award, text: 'All Country SSN', path: '/services' }
   ];
 
   const congratulationText = "Congratulations";
@@ -121,14 +121,14 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Feature Grid with Original Hover Styles */}
+          {/* Feature Grid with SPECIFIC PATHS */}
           <div className="max-w-5xl mx-auto pt-8">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
                   <div key={index} className="group relative">
-                    <Link to='/services'>
+                    <Link to={feature.path}>
                       <div className="relative p-6 rounded-2xl bg-gradient-to-br from-slate-800/80 to-slate-900/80 border border-teal-500/30 backdrop-blur-sm hover:border-teal-400/60 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-teal-500/30 overflow-hidden cursor-pointer">
                         {/* Animated Background Gradient */}
                         <div className="absolute inset-0 bg-gradient-to-br from-teal-500/0 via-cyan-500/10 to-teal-500/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
