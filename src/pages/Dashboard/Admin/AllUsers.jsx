@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import Swal from 'sweetalert2';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import Swal from "sweetalert2";
 import {
   Search,
   Filter,
@@ -10,59 +10,63 @@ import {
   UserCheck,
   Edit3,
   MoreVertical,
-  Loader
-} from 'lucide-react';
-import { usePrivateRoute } from '../../../components/usePrivateRoute';
+  Loader,
+  Trash2,
+} from "lucide-react";
+import { usePrivateRoute } from "../../../components/usePrivateRoute";
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
   const [updatingUser, setUpdatingUser] = useState(null);
   usePrivateRoute(["admin"]);
 
   // Fetch all users
-const fetchUsers = async () => {
-  try {
-    setLoading(true);
-    const response = await axios.get('https://btts-server-production.up.railway.app/users', {
-      headers: {
-        'x-api-key': 'admin123456' // Use your actual admin API key
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        "https://btts-server-production.up.railway.app/users",
+        {
+          headers: {
+            "x-api-key": "admin123456", // Use your actual admin API key
+          },
+        }
+      );
+      setUsers(response.data);
+      setFilteredUsers(response.data);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        Swal.fire({
+          title: "Access Denied!",
+          text: "You do not have permission to access this data.",
+          icon: "error",
+          confirmButtonText: "OK",
+          confirmButtonColor: "#ef4444",
+          background: "#1e293b",
+          color: "white",
+        });
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to fetch users data",
+          icon: "error",
+          confirmButtonText: "Try Again",
+          confirmButtonColor: "#ef4444",
+          background: "#1e293b",
+          color: "white",
+        });
       }
-    });
-    setUsers(response.data);
-    setFilteredUsers(response.data);
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    
-    // Check if it's an authentication error
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      Swal.fire({
-        title: 'Access Denied!',
-        text: 'You do not have permission to access this data.',
-        icon: 'error',
-        confirmButtonText: 'OK',
-        confirmButtonColor: '#ef4444',
-        background: '#1e293b',
-        color: 'white'
-      });
-    } else {
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to fetch users data',
-        icon: 'error',
-        confirmButtonText: 'Try Again',
-        confirmButtonColor: '#ef4444',
-        background: '#1e293b',
-        color: 'white'
-      });
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -73,15 +77,16 @@ const fetchUsers = async () => {
     let filtered = users;
 
     if (searchTerm) {
-      filtered = filtered.filter(user =>
-        user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.uid?.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(
+        (user) =>
+          user.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.uid?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    if (roleFilter !== 'all') {
-      filtered = filtered.filter(user => user.userRole === roleFilter);
+    if (roleFilter !== "all") {
+      filtered = filtered.filter((user) => user.userRole === roleFilter);
     }
 
     setFilteredUsers(filtered);
@@ -91,83 +96,171 @@ const fetchUsers = async () => {
   const updateUserRole = async (uid, newRole) => {
     try {
       setUpdatingUser(uid);
-      
+
       const result = await Swal.fire({
-        title: 'Update User Role?',
+        title: "Update User Role?",
         html: `Are you sure you want to change this user's role to <strong>${newRole}</strong>?`,
-        icon: 'question',
+        icon: "question",
         showCancelButton: true,
-        confirmButtonText: 'Yes, Update!',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#0d9488',
-        cancelButtonColor: '#ef4444',
-        background: '#1e293b',
-        color: 'white',
-        customClass: {
-          popup: 'sweet-alert-dark'
-        }
+        confirmButtonText: "Yes, Update!",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#0d9488",
+        cancelButtonColor: "#ef4444",
+        background: "#1e293b",
+        color: "white",
       });
 
       if (result.isConfirmed) {
-        await axios.put(`https://btts-server-production.up.railway.app/users/${uid}/role`, {
-          userRole: newRole
-        });
+        // ADD API KEY HEADER HERE
+        await axios.put(
+          `https://btts-server-production.up.railway.app/users/${uid}/role`,
+          {
+            userRole: newRole,
+          },
+          {
+            headers: {
+              "x-api-key": "admin123456", // Add this line
+            },
+          }
+        );
 
         // Update local state
-        setUsers(prevUsers =>
-          prevUsers.map(user =>
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
             user.uid === uid ? { ...user, userRole: newRole } : user
           )
         );
 
         Swal.fire({
-          title: 'Success!',
+          title: "Success!",
           text: `User role updated to ${newRole}`,
-          icon: 'success',
-          confirmButtonColor: '#0d9488',
-          background: '#1e293b',
-          color: 'white',
+          icon: "success",
+          confirmButtonColor: "#0d9488",
+          background: "#1e293b",
+          color: "white",
           timer: 2000,
-          showConfirmButton: false
+          showConfirmButton: false,
         });
       }
     } catch (error) {
-      console.error('Error updating user role:', error);
-      Swal.fire({
-        title: 'Error!',
-        text: 'Failed to update user role',
-        icon: 'error',
-        confirmButtonColor: '#ef4444',
-        background: '#1e293b',
-        color: 'white'
-      });
+      console.error("Error updating user role:", error);
+
+      // Check if it's an authentication error
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        Swal.fire({
+          title: "Permission Denied!",
+          text: "You need admin privileges to update user roles.",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+          background: "#1e293b",
+          color: "white",
+        });
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to update user role",
+          icon: "error",
+          confirmButtonColor: "#ef4444",
+          background: "#1e293b",
+          color: "white",
+        });
+      }
     } finally {
       setUpdatingUser(null);
     }
   };
+  // Delete user
+  const deleteUser = async (uid, userName) => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      html: `You are about to delete user: <strong>${
+        userName || "Unknown User"
+      }</strong><br>This action cannot be undone!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+      background: "#1e293b",
+      color: "white",
+    });
 
+    if (result.isConfirmed) {
+      try {
+        // You'll need to add this endpoint to your server
+        await axios.delete(
+          `https://btts-server-production.up.railway.app/users/${uid}`,
+          {
+            headers: {
+              "x-api-key": "admin123456",
+            },
+          }
+        );
+
+        // Remove user from local state
+        setUsers((prevUsers) => prevUsers.filter((user) => user.uid !== uid));
+        setFilteredUsers((prevUsers) =>
+          prevUsers.filter((user) => user.uid !== uid)
+        );
+
+        Swal.fire({
+          title: "Deleted!",
+          text: "User has been deleted successfully.",
+          icon: "success",
+          confirmButtonColor: "#0d9488",
+          background: "#1e293b",
+          color: "white",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          Swal.fire({
+            title: "Permission Denied!",
+            text: "You need admin privileges to delete users.",
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+            background: "#1e293b",
+            color: "white",
+          });
+        } else {
+          Swal.fire({
+            title: "Error!",
+            text: "Failed to delete user",
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+            background: "#1e293b",
+            color: "white",
+          });
+        }
+      }
+    }
+  };
   // Get role badge color
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'admin':
-        return 'bg-purple-500/20 text-purple-300 border-purple-500/50';
-      case 'moderator':
-        return 'bg-blue-500/20 text-blue-300 border-blue-500/50';
-      case 'user':
-        return 'bg-teal-500/20 text-teal-300 border-teal-500/50';
+      case "admin":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/50";
+      case "moderator":
+        return "bg-blue-500/20 text-blue-300 border-blue-500/50";
+      case "user":
+        return "bg-teal-500/20 text-teal-300 border-teal-500/50";
       default:
-        return 'bg-slate-500/20 text-slate-300 border-slate-500/50';
+        return "bg-slate-500/20 text-slate-300 border-slate-500/50";
     }
   };
 
   // Get role icon
   const getRoleIcon = (role) => {
     switch (role) {
-      case 'admin':
+      case "admin":
         return <Shield className="w-4 h-4" />;
-      case 'moderator':
+      case "moderator":
         return <UserCheck className="w-4 h-4" />;
-      case 'user':
+      case "user":
         return <User className="w-4 h-4" />;
       default:
         return <User className="w-4 h-4" />;
@@ -176,10 +269,10 @@ const fetchUsers = async () => {
 
   // Format date
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -199,8 +292,12 @@ const fetchUsers = async () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">User Management</h1>
-          <p className="text-slate-400">Manage and update user roles and permissions</p>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            User Management
+          </h1>
+          <p className="text-slate-400">
+            Manage and update user roles and permissions
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -222,7 +319,7 @@ const fetchUsers = async () => {
               <div>
                 <p className="text-slate-400 text-sm">Admins</p>
                 <p className="text-2xl font-bold text-white">
-                  {users.filter(u => u.userRole === 'admin').length}
+                  {users.filter((u) => u.userRole === "admin").length}
                 </p>
               </div>
               <div className="p-3 bg-purple-500/20 rounded-full">
@@ -236,7 +333,7 @@ const fetchUsers = async () => {
               <div>
                 <p className="text-slate-400 text-sm">Moderators</p>
                 <p className="text-2xl font-bold text-white">
-                  {users.filter(u => u.userRole === 'moderator').length}
+                  {users.filter((u) => u.userRole === "moderator").length}
                 </p>
               </div>
               <div className="p-3 bg-blue-500/20 rounded-full">
@@ -250,7 +347,7 @@ const fetchUsers = async () => {
               <div>
                 <p className="text-slate-400 text-sm">Regular Users</p>
                 <p className="text-2xl font-bold text-white">
-                  {users.filter(u => u.userRole === 'user').length}
+                  {users.filter((u) => u.userRole === "user").length}
                 </p>
               </div>
               <div className="p-3 bg-slate-500/20 rounded-full">
@@ -309,11 +406,21 @@ const fetchUsers = async () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-slate-700/50">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">User</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Role</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Joined</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">Status</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-300">Actions</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">
+                    User
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">
+                    Joined
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-slate-300">
+                    Status
+                  </th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-slate-300">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
@@ -323,37 +430,54 @@ const fetchUsers = async () => {
                       <div className="text-slate-400">
                         <User className="w-12 h-12 mx-auto mb-4 opacity-50" />
                         <p className="text-lg">No users found</p>
-                        <p className="text-sm">Try adjusting your search or filter criteria</p>
+                        <p className="text-sm">
+                          Try adjusting your search or filter criteria
+                        </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((user) => (
-                    <tr key={user.uid} className="hover:bg-slate-700/30 transition-colors duration-200">
+                    <tr
+                      key={user.uid}
+                      className="hover:bg-slate-700/30 transition-colors duration-200"
+                    >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
                             <span className="font-bold text-slate-900 text-sm">
-                              {user.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                              {user.displayName?.charAt(0)?.toUpperCase() ||
+                                "U"}
                             </span>
                           </div>
                           <div>
                             <p className="font-medium text-white">
-                              {user.displayName || 'Unknown User'}
+                              {user.displayName || "Unknown User"}
                             </p>
-                            <p className="text-sm text-slate-400">{user.email}</p>
-                            <p className="text-xs text-slate-500 font-mono">{user.uid}</p>
+                            <p className="text-sm text-slate-400">
+                              {user.email}
+                            </p>
+                            <p className="text-xs text-slate-500 font-mono">
+                              {user.uid}
+                            </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(user.userRole)}`}>
+                        <span
+                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${getRoleBadgeColor(
+                            user.userRole
+                          )}`}
+                        >
                           {getRoleIcon(user.userRole)}
-                          {user.userRole?.charAt(0).toUpperCase() + user.userRole?.slice(1) || 'User'}
+                          {user.userRole?.charAt(0).toUpperCase() +
+                            user.userRole?.slice(1) || "User"}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-300">
-                        {user.createdAt ? formatDate(user.createdAt) : 'Unknown'}
+                        {user.createdAt
+                          ? formatDate(user.createdAt)
+                          : "Unknown"}
                       </td>
                       <td className="px-6 py-4">
                         <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/50">
@@ -367,7 +491,9 @@ const fetchUsers = async () => {
                           <div className="relative">
                             <select
                               value={user.userRole}
-                              onChange={(e) => updateUserRole(user.uid, e.target.value)}
+                              onChange={(e) =>
+                                updateUserRole(user.uid, e.target.value)
+                              }
                               disabled={updatingUser === user.uid}
                               className="appearance-none bg-slate-700 border border-slate-600 rounded-lg px-4 py-2 pr-8 text-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                             >
@@ -379,9 +505,16 @@ const fetchUsers = async () => {
                               <Loader className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-teal-500 animate-spin" />
                             )}
                           </div>
-                          
-                          <button className="p-2 text-slate-400 hover:text-teal-400 hover:bg-teal-500/20 rounded-lg transition-all duration-300">
-                            <MoreVertical className="w-4 h-4" />
+
+                          {/* Delete Button */}
+                          <button
+                            onClick={() =>
+                              deleteUser(user.uid, user.displayName)
+                            }
+                            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-300"
+                            title="Delete User"
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
