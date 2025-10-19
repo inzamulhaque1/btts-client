@@ -1,0 +1,6 @@
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/amazuxsm/public_html/
+    - /bin/npm install --prefix /home/amazuxsm/repos/btts-client
+    - /bin/npm run build --prefix /home/amazuxsm/repos/btts-client
+    - /bin/rsync -av --delete /home/amazuxsm/repos/btts-client/dist/ $DEPLOYPATH
