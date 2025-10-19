@@ -7,7 +7,7 @@ const Hero = () => {
     { icon: Globe, text: 'All Country Wise', path: '/services' },
     { icon: FileText, text: 'Editable Files', path: '/services' },
     { icon: Server, text: 'VPS Services', path: '/services' },
-    { icon: ServerCogIcon, text: 'PROXY IP', path: 'https://t.me/btheproxifier_bot'},
+    { icon: ServerCogIcon, text: 'PROXY IP', path: '/Proxy'},
     { icon: Award, text: 'All Country SSN', path: '/services' }
   ];
 

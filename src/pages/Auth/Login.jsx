@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../provider/AuthProvider';
 import { useState } from 'react';
@@ -36,7 +37,7 @@ const Login = () => {
       navigate(from, { replace: true });
       
     } catch (error) {
-      setError('Failed to sign in: ' + error.message);
+      setError('Bro Check Your Email Or Password You Entered Wrong Information');
       setLoading(false);
     }
   };

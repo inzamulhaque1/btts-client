@@ -15,6 +15,7 @@ import ContactUs from "../pages/Contact/ContactUs";
 import Profile from "../pages/Dashboard/Profile";
 import AllUsers from "../pages/Dashboard/Admin/AllUsers";
 import AllServices from "../pages/Dashboard/Admin/AllServices";
+import ProxyIP from "../pages/OurServices/ProxyIP/ProxyIP";
 
 export const router = createBrowserRouter([
   {
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
       {
         path: "/admin-users",
         element: <AllUsers></AllUsers>
+      },
+      {
+        path: "/Proxy",
+        element: <ProxyIP></ProxyIP>
       },
     ],
   },

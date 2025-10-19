@@ -26,6 +26,7 @@ import { useAuth } from "../provider/AuthProvider";
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isDashboardDropdownOpen, setIsDashboardDropdownOpen] = useState(false);
+  const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [userRole, setUserRole] = useState(null);
   
@@ -34,6 +35,12 @@ const Navbar = () => {
 
   // Constants
   const SOCIAL_ICONS = [Facebook, Twitter, Instagram, Linkedin];
+
+  // Services submenu
+  const servicesSubmenu = [
+    { name: "Wise", path: "/services", icon: WifiHigh },
+    { name: "Proxy IP", path: "/proxy", icon: Workflow },
+  ];
 
   // Dashboard submenu based on user role
   const getDashboardSubmenu = (role) => {
@@ -67,6 +74,7 @@ const Navbar = () => {
       if (window.innerWidth >= 1024) {
         setIsMobileMenuOpen(false);
         setIsDashboardDropdownOpen(false);
+        setIsServicesDropdownOpen(false);
       }
     };
     window.addEventListener("resize", handleResize);
@@ -76,13 +84,14 @@ const Navbar = () => {
   useEffect(() => {
     const handleClickOutside = () => {
       setIsDashboardDropdownOpen(false);
+      setIsServicesDropdownOpen(false);
     };
     
-    if (isDashboardDropdownOpen) {
+    if (isDashboardDropdownOpen || isServicesDropdownOpen) {
       document.addEventListener("click", handleClickOutside);
     }
     return () => document.removeEventListener("click", handleClickOutside);
-  }, [isDashboardDropdownOpen]);
+  }, [isDashboardDropdownOpen, isServicesDropdownOpen]);
 
   useEffect(() => {
     if (currentUser?.uid) {
@@ -103,14 +112,14 @@ const Navbar = () => {
     const baseItems = [
       { name: "Home", path: "/" },
       { name: "About", path: "/about" },
-      { name: "Services", path: "/services" },
+      { name: "Services", path: "/services", hasSubmenu: true, submenuType: "services" },
       { name: "Contact", path: "/contact" },
     ];
 
     if (!currentUser) return baseItems;
 
     const userItems = [...baseItems, 
-        { name: "Dashboard", path: "/dashboard", hasSubmenu: true }];
+        { name: "Dashboard", path: "/dashboard", hasSubmenu: true, submenuType: "dashboard" }];
     return userItems;
   }, [currentUser]);
 
@@ -120,6 +129,7 @@ const Navbar = () => {
       await logout();
       setIsMobileMenuOpen(false);
       setIsDashboardDropdownOpen(false);
+      setIsServicesDropdownOpen(false);
       setUserRole(null);
     } catch (err) {
       console.error("Logout failed:", err.message);
@@ -133,11 +143,17 @@ const Navbar = () => {
   const closeMobileMenu = useCallback(() => {
     setIsMobileMenuOpen(false);
     setIsDashboardDropdownOpen(false);
+    setIsServicesDropdownOpen(false);
   }, []);
 
   const toggleDashboardDropdown = useCallback((e) => {
     e?.stopPropagation();
     setIsDashboardDropdownOpen(prev => !prev);
+  }, []);
+
+  const toggleServicesDropdown = useCallback((e) => {
+    e?.stopPropagation();
+    setIsServicesDropdownOpen(prev => !prev);
   }, []);
 
   // Helper Components
@@ -181,17 +197,33 @@ const Navbar = () => {
     const isActive = location.pathname === item.path;
 
     if (item.hasSubmenu) {
-      return isMobile ? (
-        <MobileDashboardItem 
-          item={item} 
-          isActive={isActive} 
-        />
-      ) : (
-        <DesktopDashboardItem 
-          item={item} 
-          isActive={isActive} 
-        />
-      );
+      if (item.submenuType === "services") {
+        return isMobile ? (
+          <MobileServicesItem 
+            item={item} 
+            isActive={isActive} 
+          />
+        ) : (
+          <DesktopServicesItem 
+            item={item} 
+            isActive={isActive} 
+          />
+        );
+      }
+      
+      if (item.submenuType === "dashboard") {
+        return isMobile ? (
+          <MobileDashboardItem 
+            item={item} 
+            isActive={isActive} 
+          />
+        ) : (
+          <DesktopDashboardItem 
+            item={item} 
+            isActive={isActive} 
+          />
+        );
+      }
     }
 
     const baseClasses = `font-medium transition-all duration-300 ${
@@ -215,6 +247,90 @@ const Navbar = () => {
       >
         {item.name}
       </Link>
+    );
+  };
+
+  const DesktopServicesItem = ({ item, isActive }) => {
+    return (
+      <div className="relative">
+        <button
+          onClick={toggleServicesDropdown}
+          className={`flex items-center gap-1 px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+            isActive
+              ? "text-cyan-300 bg-teal-500/20"
+              : "text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10"
+          }`}
+        >
+          <Workflow className="w-4 h-4" />
+          {item.name}
+          <ChevronDown
+            className={`w-4 h-4 transition-transform ${
+              isServicesDropdownOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {isServicesDropdownOpen && (
+          <div className="absolute left-0 mt-1 w-56 rounded-lg shadow-xl bg-slate-900 border border-teal-500/25 py-1 z-50">
+            {servicesSubmenu.map((subItem) => (
+              <Link
+                key={subItem.path}
+                to={subItem.path}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-slate-300 hover:text-cyan-300 hover:bg-teal-500/20"
+                onClick={() => setIsServicesDropdownOpen(false)}
+              >
+                <subItem.icon className="w-4 h-4" />
+                {subItem.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const MobileServicesItem = ({ item, isActive }) => {
+    return (
+      <div className="space-y-1">
+        <button
+          onClick={toggleServicesDropdown}
+          className={`flex items-center justify-between w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 ${
+            isActive
+              ? "text-cyan-300 bg-teal-500/20"
+              : "text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10"
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <Workflow className="w-4 h-4" />
+            {item.name}
+          </div>
+          <ChevronRight
+            className={`w-4 h-4 transition-transform ${
+              isServicesDropdownOpen ? "rotate-90" : ""
+            }`}
+          />
+        </button>
+
+        {isServicesDropdownOpen && (
+          <div className="pl-6 space-y-1">
+            {servicesSubmenu.map((subItem) => (
+              <Link
+                key={subItem.path}
+                to={subItem.path}
+                className={`flex items-center gap-2 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
+                  location.pathname === subItem.path
+                    ? "text-cyan-300 bg-teal-500/20"
+                    : "text-slate-300 hover:text-cyan-200 hover:bg-teal-500/10"
+                }`}
+                onClick={closeMobileMenu}
+              >
+                <subItem.icon className="w-4 h-4" />
+                {subItem.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
