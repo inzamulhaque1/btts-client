@@ -19,6 +19,7 @@ import {
   UserIcon,
   Workflow,
   WifiHigh,
+  LayoutDashboardIcon,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../provider/AuthProvider";
@@ -51,7 +52,8 @@ const Navbar = () => {
 
     if (role === "admin") {
       return [
-        { name: "Users", path: "/admin-users", icon: User },
+        { name: "Admin Dashboard", path: "/dashboard", icon: LayoutDashboardIcon },
+        // { name: "All Users", path: "/admin-users", icon: User },
         { name: "Add Service", path: "/add-services", icon: Workflow },
         { name: "All Service", path: "/admin-services", icon: WifiHigh },
         { name: "All Orders", path: "/admin-orders", icon: LayoutDashboard },

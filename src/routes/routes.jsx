@@ -7,7 +7,7 @@ import Services from "../pages/Services/Services";
 import AddServicePage from "../pages/Services/AddService";
 import ServiceDetails from "../pages/Services/ServiceDetails";
 import AboutUs from "../pages/About/AboutUs";
-import Dashboard from "../pages/Dashboard/Dashboard";
+
 import MyOrders from "../pages/Dashboard/User/MyOrders";
 import AdminOrders from "../pages/Dashboard/Admin/AdminOrders";
 import UnderConstruction from "../components/UnderConstruction";
@@ -16,6 +16,7 @@ import Profile from "../pages/Dashboard/Profile";
 import AllUsers from "../pages/Dashboard/Admin/AllUsers";
 import AllServices from "../pages/Dashboard/Admin/AllServices";
 import ProxyIP from "../pages/OurServices/ProxyIP/ProxyIP";
+import Dashboard from "../layout/Dashboard";
 
 export const router = createBrowserRouter([
   {
@@ -63,10 +64,7 @@ export const router = createBrowserRouter([
         path: "/service-details/:id",
         element: <ServiceDetails></ServiceDetails>,
       },
-      {
-        path: "/dashboard",
-        element: <Dashboard></Dashboard>,
-      },
+
       {
         path: "/my-orders",
         element: <MyOrders></MyOrders>,
@@ -75,14 +73,25 @@ export const router = createBrowserRouter([
         path: "/admin-orders",
         element: <AdminOrders></AdminOrders>,
       },
-      {
-        path: "/admin-users",
-        element: <AllUsers></AllUsers>
-      },
+      
       {
         path: "/Proxy",
-        element: <ProxyIP></ProxyIP>
+        element: <ProxyIP></ProxyIP>,
+      },
+      {
+        path: "/admin-users",
+        element: <AllUsers></AllUsers>,
       },
     ],
+  },
+  {
+    path: "/dashboard",
+    element: <Dashboard></Dashboard>,
+    children: [
+      {
+        path: "admin-users",
+        element: <AllUsers></AllUsers>,
+      },
+    ]
   },
 ]);
