@@ -14,7 +14,18 @@ import {
   Edit,
   Save,
   X,
+  Upload,
+  Camera,
+  Eye,
+  Download,
+  MoreVertical,
 } from "lucide-react";
+
+// Cloudinary configuration
+const CLOUDINARY_CONFIG = {
+  cloudName: 'dggaympdv',
+  uploadPreset: 'ml_default',
+};
 
 const WiseStockDetails = () => {
   const { id } = useParams();
@@ -23,8 +34,11 @@ const WiseStockDetails = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [currentImageType, setCurrentImageType] = useState("");
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [formData, setFormData] = useState({
     status: "",
     soldTo: "",
@@ -104,6 +118,163 @@ const WiseStockDetails = () => {
     }
   };
 
+  // Cloudinary upload function
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+    formData.append('folder', 'wise-stocks');
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || 'Upload failed');
+    }
+
+    return data.secure_url;
+  };
+
+  // HEIC to JPEG conversion
+  const convertHeicToJpeg = async (file) => {
+    try {
+      const heic2any = (await import('heic2any')).default;
+      
+      const conversionResult = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.8
+      });
+
+      const newFile = new File(
+        [conversionResult],
+        file.name.replace(/\.heic$/i, '.jpg'),
+        {
+          type: 'image/jpeg',
+          lastModified: new Date().getTime()
+        }
+      );
+
+      return newFile;
+    } catch (error) {
+      console.error('HEIC conversion error:', error);
+      throw new Error('HEIC conversion failed. Please use JPEG or PNG format.');
+    }
+  };
+
+  const handleImageUpdate = async (file, imageType) => {
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      Swal.fire({
+        title: 'File too large!',
+        text: 'Please select an image smaller than 10MB',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = [
+      'image/jpeg', 
+      'image/jpg', 
+      'image/png', 
+      'image/heic', 
+      'image/heif',
+      'image/webp',
+      'image/gif',
+      'application/octet-stream'
+    ];
+    
+    const isHeic = file.type.includes('heic') || 
+                   file.type.includes('heif') ||
+                   file.name.toLowerCase().endsWith('.heic') ||
+                   file.name.toLowerCase().endsWith('.heif');
+
+    const isValidType = allowedTypes.includes(file.type.toLowerCase()) || isHeic;
+    
+    if (!isValidType) {
+      Swal.fire({
+        title: 'Invalid file type!',
+        text: 'Please select JPG, PNG, WEBP, GIF, or HEIC image files',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
+    try {
+      setUploadingImage(true);
+
+      let fileToUpload = file;
+
+      // Convert HEIC to JPEG if needed
+      if (isHeic) {
+        fileToUpload = await convertHeicToJpeg(file);
+      }
+
+      // Upload to Cloudinary
+      const imageUrl = await uploadToCloudinary(fileToUpload);
+
+      // Update the stock with new image URL
+      const updateData = {
+        [imageType]: imageUrl,
+        updatedAt: new Date(),
+      };
+
+      const response = await axios.put(
+        `https://btts-server-production.up.railway.app/wise-stocks/${id}`,
+        updateData,
+        {
+          headers: {
+            "x-api-key": "admin123456",
+          },
+        }
+      );
+
+      setStock(response.data.stock);
+      setShowImageModal(false);
+
+      Swal.fire({
+        title: "Success!",
+        text: "Image updated successfully",
+        icon: "success",
+        confirmButtonColor: "#0d9488",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error updating image:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update image",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const openImageModal = (imageType) => {
+    setCurrentImageType(imageType);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setCurrentImageType("");
+  };
+
   const openStatusModal = () => {
     setShowStatusModal(true);
     fetchUsers();
@@ -118,6 +289,47 @@ const WiseStockDetails = () => {
     });
   };
 
+  // Download image function
+  const downloadImage = async (imageUrl, imageName) => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${imageName}_${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      Swal.fire({
+        title: "Success!",
+        text: "Image download started",
+        icon: "success",
+        confirmButtonColor: "#0d9488",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (error) {
+      console.error("Error downloading image:", error);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to download image",
+        icon: "error",
+        confirmButtonColor: "#ef4444",
+      });
+    }
+  };
+
+  // View image in full screen
+  const viewImageFullScreen = (imageUrl) => {
+    const newWindow = window.open(imageUrl, '_blank');
+    if (newWindow) {
+      newWindow.focus();
+    }
+  };
+
   const updateStockStatus = async () => {
     if (!formData.status) {
       Swal.fire({
@@ -129,7 +341,6 @@ const WiseStockDetails = () => {
       return;
     }
 
-    // If status is sold, require soldTo field
     if (formData.status === "sold" && !formData.soldTo) {
       Swal.fire({
         title: "Error!",
@@ -189,7 +400,6 @@ const WiseStockDetails = () => {
     setFormData((prev) => ({
       ...prev,
       status: newStatus,
-      // Clear soldTo if status is not sold
       ...(newStatus !== "sold" && { soldTo: "" }),
     }));
   };
@@ -219,6 +429,15 @@ const WiseStockDetails = () => {
   const getSoldToUserName = (userId) => {
     const user = users.find((u) => u.uid === userId || u._id === userId);
     return user ? user.displayName || user.email : "Unknown User";
+  };
+
+  const getImageLabel = (imageType) => {
+    const labels = {
+      authImage: "Authentication Image",
+      docImg1: "Document 1",
+      docImg2: "Document 2"
+    };
+    return labels[imageType] || imageType;
   };
 
   useEffect(() => {
@@ -380,7 +599,7 @@ const WiseStockDetails = () => {
               </div>
             </div>
 
-            {/* Images Section - Keep the same as before */}
+            {/* Images Section */}
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -390,80 +609,69 @@ const WiseStockDetails = () => {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {stock.authImage && (
-                    <div className="text-center">
+                  {[
+                    { type: "authImage", label: "Authentication Image" },
+                    { type: "docImg1", label: "Document 1" },
+                    { type: "docImg2", label: "Document 2" }
+                  ].map(({ type, label }) => (
+                    <div key={type} className="text-center">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Authentication Image
+                        {label}
                       </label>
-                      <img
-                        src={stock.authImage}
-                        alt="Authentication"
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                        onError={(e) => {
-                          e.target.src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik05NiA2NEM4Mi43NDUyIDY0IDcyIDc0Ljc0NTIgNzIgODhDNTIgODIuNzQ1MiA4Mi43NDUyIDY0IDk2IDY0WiIgZmlsbD0iIzhERENERiIvPgo8Y2lyY2xlIGN4PSI5NiIgY3k9Ijk2IiByPSIyNCIgZmlsbD0iIzlDQTNCQiIvPgo8cGF0aCBkPSJNMTQ0IDE0NEg0OEM0My41ODIzIDE0NCA0MCAxNDAuNDE8IDQwIDEzNlY1NkM0MCA1MS41ODIzIDQzLjU4MjMgNDggNDggNDhIMTQ0QzE0OC40MTggNDggMTUyIDUxLjU4MjMgMTUyIDU2VjEzNkMxNTIgMTQwLjQxOCAxNDguNDE4IDE0NCAxNDQgMTQ0WiIgZmlsbD0iIzlDQTNCQiIvPgo8L3N2Zz4=";
-                        }}
-                      />
-                      <a
-                        href={stock.authImage}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        View Full Size
-                      </a>
+                      <div className="relative">
+                        <img
+                          src={stock[type] || "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik05NiA2NEM4Mi43NDUyIDY0IDcyIDc0Ljc0NTIgNzIgODhDNTIgODIuNzQ1MiA4Mi43NDUyIDY0IDk2IDY0WiIgZmlsbD0iIzhERENERiIvPgo8Y2lyY2xlIGN4PSI5NiIgY3k9Ijk2IiByPSIyNCIgZmlsbD0iIzlDQTNCQiIvPgo8cGF0aCBkPSJNMTQ0IDE0NEg0OEM0My41ODIzIDE0NCA0MCAxNDAuNDE4IDQwIDEzNlY1NkM0MCA1MS41ODIzIDQzLjU4MjMgNDggNDggNDhIMTQ0QzE0OC40MTggNDggMTUyIDUxLjU4MjMgMTUyIDU2VjEzNkMxNTIgMTQwLjQxOCAxNDguNDE4IDE0NCAxNDQgMTQ0WiIgZmlsbD0iIzlDQTNCQiIvPgo8L3N2Zz4="}
+                          alt={label}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        />
+                      </div>
+                      
+                      {/* Action Buttons */}
+                      {stock[type] ? (
+                        <div className="mt-3 flex justify-center space-x-2">
+                          {/* View Button */}
+                          <button
+                            onClick={() => viewImageFullScreen(stock[type])}
+                            className="flex items-center gap-1 px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                            title="View Full Screen"
+                          >
+                            <Eye className="w-3 h-3" />
+                            
+                          </button>
+                          
+                          {/* Download Button */}
+                          <button
+                            onClick={() => downloadImage(stock[type], label)}
+                            className="flex items-center gap-1 px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
+                            title="Download Image"
+                          >
+                            <Download className="w-3 h-3" />
+                            
+                          </button>
+                          
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => openImageModal(type)}
+                            className="flex items-center gap-1 px-3 py-1 bg-teal-500 text-white text-xs rounded hover:bg-teal-600 transition-colors"
+                            title="Update Image"
+                          >
+                            <Edit className="w-3 h-3" />
+                            
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-3">
+                          <button
+                            onClick={() => openImageModal(type)}
+                            className="flex items-center gap-1 px-3 py-2 bg-teal-500 text-white text-sm rounded hover:bg-teal-600 transition-colors mx-auto"
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload Image
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
-
-                  {stock.docImg1 && (
-                    <div className="text-center">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Document 1
-                      </label>
-                      <img
-                        src={stock.docImg1}
-                        alt="Document 1"
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                        onError={(e) => {
-                          e.target.src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik05NiA2NEM4Mi43NDUyIDY0IDcyIDc0Ljc0NTIgNzIgODhDNTIgODIuNzQ1MiA4Mi43NDUyIDY0IDk2IDY0WiIgZpbGw9IiM4RERDREYiLz4KPGNpcmNsZSBjeD0iOTYiIGN5PSI5NiIgcj0iMjQiIGZpbGw9IiM5Q0EzQkIiLz4KPHBhdGggZD0iTTE0NCAxNDRINDhDNDMuNTgyMyAxNDQgNDAgMTQwLjQxOCA0MCAxMzZWNTZDNDAgNTEuNTgyMyA0My41ODIzIDQ4IDQ4IDQ4SDE0NEMxNDguNDE4IDQ4IDE1MiA1MS41ODIzIDE1MiA1NlYxMzZDMTUyIDE0MC40MTggMTQ4LjQxOCAxNDQgMTQ0IDE0NFoiIGZpbGw9IiM5Q0EzQkIiLz4KPC9zdmc+";
-                        }}
-                      />
-                      <a
-                        href={stock.docImg1}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        View Full Size
-                      </a>
-                    </div>
-                  )}
-
-                  {stock.docImg2 && (
-                    <div className="text-center">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Document 2
-                      </label>
-                      <img
-                        src={stock.docImg2}
-                        alt="Document 2"
-                        className="w-full h-48 object-cover rounded-lg border border-gray-200"
-                        onError={(e) => {
-                          e.target.src =
-                            "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik05NiA2NEM4Mi43NDUyIDY0IDcyIDc0Ljc0NTIgNzIgODhDNTIgODIuNzQ1MiA4Mi43NDUyIDY0IDk2IDY0WiIgZmlsbD0iIzhERENERiIvPgo8Y2lyY2xlIGN4PSI5NiIgY3k9Ijk2IiByPSIyNCIgZmlsbD0iIzlDQTNCQiIvPgo8cGF0aCBkPSJNMTQ0IDE0NEg0OEM0My41ODIzIDE0NCA0MCAxNDAuNDE4IDQwIDEzNlY1NkM0MCA1MS41ODIzIDQzLjU4MjMgNDggNDggNDhIMTQ0QzE0OC40MTggNDggMTUyIDUxLjU4MjMgMTUyIDU2VjEzNkMxNTIgMTQwLjQxOCAxNDguNDE4IDE0NCAxNDQgMTQ0WiIgZmlsbD0iIzlDQTNCQiIvPgo8L3N2Zz4=";
-                        }}
-                      />
-                      <a
-                        href={stock.docImg2}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-block mt-2 text-sm text-blue-600 hover:text-blue-800"
-                      >
-                        View Full Size
-                      </a>
-                    </div>
-                  )}
+                  ))}
                 </div>
 
                 {!stock.authImage && !stock.docImg1 && !stock.docImg2 && (
@@ -635,6 +843,88 @@ const WiseStockDetails = () => {
                   <Save className="w-4 h-4" />
                 )}
                 Update Status
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Update Modal */}
+      {showImageModal && (
+        <div className="fixed inset-0 backdrop-blur-md bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h2 className="text-xl font-semibold text-gray-900">
+                Update {getImageLabel(currentImageType)}
+              </h2>
+              <button
+                onClick={closeImageModal}
+                className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={uploadingImage}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  accept="image/jpeg, image/jpg, image/png, image/heic, image/heif, image/webp, image/gif, .heic, .heif"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      handleImageUpdate(file, currentImageType);
+                    }
+                  }}
+                  className="hidden"
+                  id="image-upload"
+                  disabled={uploadingImage}
+                />
+                <label
+                  htmlFor="image-upload"
+                  className={`flex flex-col items-center cursor-pointer ${uploadingImage ? 'opacity-50' : ''}`}
+                >
+                  {uploadingImage ? (
+                    <>
+                      <Loader className="w-8 h-8 text-teal-500 animate-spin mb-2" />
+                      <span className="text-gray-600">Uploading image...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">
+                        Click to upload new image
+                      </span>
+                      <span className="text-xs text-gray-500 mt-1">
+                        JPG, PNG, WEBP, GIF, HEIC • Max 10MB
+                      </span>
+                    </>
+                  )}
+                </label>
+              </div>
+
+              {stock[currentImageType] && (
+                <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Current Image
+                  </label>
+                  <img
+                    src={stock[currentImageType]}
+                    alt="Current"
+                    className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200">
+              <button
+                onClick={closeImageModal}
+                disabled={uploadingImage}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 disabled:opacity-50 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { ArrowLeft, Save, Loader, Shield, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Loader, Shield, Upload, X, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 
 // Use your existing ml_default preset that is already UNSIGNED
 const CLOUDINARY_CONFIG = {
@@ -16,6 +16,7 @@ const AddWiseStock = () => {
     docImg1: false,
     docImg2: false
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     wiseName: '',
     wiseEmail: '',
@@ -23,8 +24,7 @@ const AddWiseStock = () => {
     authImage: '',
     docImg1: '',
     docImg2: '',
-    userName: '',
-    userEmail: ''
+    userName: '' // Removed userEmail field
   });
 
   const handleInputChange = (e) => {
@@ -229,27 +229,13 @@ const AddWiseStock = () => {
     e.preventDefault();
     
     // Validation
-    const requiredFields = ['wiseName', 'wiseEmail', 'wisePassword', 'userName', 'userEmail'];
+    const requiredFields = ['wiseName', 'wiseEmail', 'wisePassword', 'userName', 'authImage'];
     const missingFields = requiredFields.filter(field => !formData[field]);
     
     if (missingFields.length > 0) {
       Swal.fire({
         title: 'Missing Fields!',
         text: 'Please fill in all required fields',
-        icon: 'error',
-        confirmButtonColor: '#ef4444'
-      });
-      return;
-    }
-
-    // Check if all images are uploaded
-    const imageFields = ['authImage', 'docImg1', 'docImg2'];
-    const missingImages = imageFields.filter(field => !formData[field]);
-    
-    if (missingImages.length > 0) {
-      Swal.fire({
-        title: 'Missing Images!',
-        text: 'Please upload all required images',
         icon: 'error',
         confirmButtonColor: '#ef4444'
       });
@@ -291,8 +277,7 @@ const AddWiseStock = () => {
           authImage: '',
           docImg1: '',
           docImg2: '',
-          userName: '',
-          userEmail: ''
+          userName: ''
         });
       }, 1500);
 
@@ -446,15 +431,24 @@ const AddWiseStock = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Password *
                   </label>
-                  <input
-                    type="password"
-                    name="wisePassword"
-                    value={formData.wisePassword}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                    placeholder="Enter Wise account password"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="wisePassword"
+                      value={formData.wisePassword}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm pr-10"
+                      placeholder="Enter Wise account password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -463,16 +457,19 @@ const AddWiseStock = () => {
                 <ImageUploadField 
                   label="Authentication Image" 
                   imageType="authImage" 
+                  required={true}
                 />
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <ImageUploadField 
                     label="Document 1" 
                     imageType="docImg1" 
+                    required={false}
                   />
                   <ImageUploadField 
                     label="Document 2" 
                     imageType="docImg2" 
+                    required={false}
                   />
                 </div>
               </div>
@@ -494,21 +491,6 @@ const AddWiseStock = () => {
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
                     placeholder="Enter your name"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Email *
-                  </label>
-                  <input
-                    type="email"
-                    name="userEmail"
-                    value={formData.userEmail}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
-                    placeholder="Enter your email"
                   />
                 </div>
               </div>
@@ -540,27 +522,7 @@ const AddWiseStock = () => {
           </form>
         </div>
 
-        {/* Configuration Status */}
-        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
-          <h4 className="text-green-800 font-medium text-sm mb-2">✓ Configuration Correct!</h4>
-          <ul className="text-green-700 text-xs space-y-1">
-            <li>• Cloud Name: <strong>dg</strong> ✓</li>
-            <li>• Upload Preset: <strong>ml_default</strong> ✓ (Unsigned)</li>
-            <li>• Status: Ready to upload images</li>
-          </ul>
-        </div>
-
-        {/* Info Box */}
-        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h4 className="text-blue-800 font-medium text-sm mb-2">Important Notes:</h4>
-          <ul className="text-blue-700 text-xs space-y-1">
-            <li>• All fields marked with * are required</li>
-            <li>• All images must be uploaded before submission</li>
-            <li>• <strong>Cloudinary Storage:</strong> Images stored securely in Cloudinary</li>
-            <li>• <strong>HEIC support:</strong> HEIC files automatically converted to JPEG</li>
-            <li>• Maximum image size: 10MB per image</li>
-          </ul>
-        </div>
+        
       </div>
     </div>
   );
