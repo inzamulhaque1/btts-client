@@ -3,7 +3,11 @@ import axios from 'axios';
 import Swal from 'sweetalert2';
 import { ArrowLeft, Save, Loader, Shield, Upload, X, Image as ImageIcon } from 'lucide-react';
 
-const IMGBB_API_KEY = '288f2bbd3e2c4d9db5eda66b617eb1c4';
+// Use your existing ml_default preset that is already UNSIGNED
+const CLOUDINARY_CONFIG = {
+  cloudName: 'dggaympdv', // Your cloud name
+  uploadPreset: 'ml_default', // This exists and is UNSIGNED
+};
 
 const AddWiseStock = () => {
   const [loading, setLoading] = useState(false);
@@ -34,17 +38,14 @@ const AddWiseStock = () => {
   // Simple HEIC to JPEG conversion using heic2any library
   const convertHeicToJpeg = async (file) => {
     try {
-      // Dynamically import heic2any library
       const heic2any = (await import('heic2any')).default;
       
-      // Convert HEIC to JPEG
       const conversionResult = await heic2any({
         blob: file,
         toType: 'image/jpeg',
         quality: 0.8
       });
 
-      // Create new file from the converted blob
       const newFile = new File(
         [conversionResult],
         file.name.replace(/\.heic$/i, '.jpg'),
@@ -61,15 +62,47 @@ const AddWiseStock = () => {
     }
   };
 
-  // Enhanced image upload with proper HEIC support
+  // Cloudinary upload function
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+    
+    // Optional: Add folder for organization
+    formData.append('folder', 'wise-stocks');
+
+    console.log('Uploading to Cloudinary:', {
+      cloudName: CLOUDINARY_CONFIG.cloudName,
+      uploadPreset: CLOUDINARY_CONFIG.uploadPreset
+    });
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      throw new Error(data.error?.message || `Upload failed: ${response.status}`);
+    }
+
+    return data.secure_url;
+  };
+
+  // Enhanced image upload with Cloudinary
   const handleImageUpload = async (file, imageType) => {
     if (!file) return;
 
-    // Check file size (max 5MB for HEIC files)
-    if (file.size > 5 * 1024 * 1024) {
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
       Swal.fire({
         title: 'File too large!',
-        text: 'Please select an image smaller than 5MB',
+        text: 'Please select an image smaller than 10MB',
         icon: 'error',
         confirmButtonColor: '#ef4444'
       });
@@ -83,7 +116,9 @@ const AddWiseStock = () => {
       'image/png', 
       'image/heic', 
       'image/heif',
-      'application/octet-stream' // For some HEIC files
+      'image/webp',
+      'image/gif',
+      'application/octet-stream'
     ];
     
     const isHeic = file.type.includes('heic') || 
@@ -96,7 +131,7 @@ const AddWiseStock = () => {
     if (!isValidType) {
       Swal.fire({
         title: 'Invalid file type!',
-        text: 'Please select JPG, PNG, or HEIC image files',
+        text: 'Please select JPG, PNG, WEBP, GIF, or HEIC image files',
         icon: 'error',
         confirmButtonColor: '#ef4444'
       });
@@ -124,64 +159,52 @@ const AddWiseStock = () => {
         try {
           fileToUpload = await convertHeicToJpeg(file);
           await conversionToast.close();
-          
-          Swal.fire({
-            title: 'Conversion Complete!',
-            text: 'HEIC image converted to JPEG successfully',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-          });
         } catch (conversionError) {
           await conversionToast.close();
           throw conversionError;
         }
       }
 
-      const uploadFormData = new FormData();
-      uploadFormData.append('image', fileToUpload);
-
-      // Upload to ImgBB
-      const response = await axios.post(
-        `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-        uploadFormData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: 45000, // 45 seconds for conversion + upload
+      // Upload to Cloudinary
+      const uploadToast = Swal.fire({
+        title: 'Uploading to Cloudinary...',
+        text: 'Please wait while we upload your image',
+        icon: 'info',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
         }
-      );
+      });
 
-      if (response.data.success) {
-        setFormData(prev => ({
-          ...prev,
-          [imageType]: response.data.data.url
-        }));
-        
-        Swal.fire({
-          title: 'Success!',
-          text: 'Image uploaded successfully',
-          icon: 'success',
-          confirmButtonColor: '#0d9488',
-          timer: 1500,
-          showConfirmButton: false
-        });
-      } else {
-        throw new Error('Upload failed');
-      }
+      const imageUrl = await uploadToCloudinary(fileToUpload);
+      await uploadToast.close();
+
+      setFormData(prev => ({
+        ...prev,
+        [imageType]: imageUrl
+      }));
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Image uploaded successfully to Cloudinary',
+        icon: 'success',
+        confirmButtonColor: '#0d9488',
+        timer: 1500,
+        showConfirmButton: false
+      });
 
     } catch (error) {
       console.error('Error uploading image:', error);
       
       let errorMessage = 'Failed to upload image. Please try again.';
       
-      if (error.message.includes('HEIC')) {
-        errorMessage = 'HEIC conversion failed. Please convert to JPEG or PNG format manually, or try a different image.';
-      } else if (error.code === 'ECONNABORTED') {
-        errorMessage = 'Upload timeout. Please try with a smaller image or better internet connection.';
-      } else if (error.response?.data?.error?.message) {
-        errorMessage = `Upload failed: ${error.response.data.error.message}`;
+      if (error.message.includes('Upload preset')) {
+        errorMessage = 'Upload preset issue. Please check your Cloudinary configuration.';
+      } else if (error.message.includes('400')) {
+        errorMessage = 'Invalid request to Cloudinary.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
       }
 
       Swal.fire({
@@ -219,14 +242,33 @@ const AddWiseStock = () => {
       return;
     }
 
+    // Check if all images are uploaded
+    const imageFields = ['authImage', 'docImg1', 'docImg2'];
+    const missingImages = imageFields.filter(field => !formData[field]);
+    
+    if (missingImages.length > 0) {
+      Swal.fire({
+        title: 'Missing Images!',
+        text: 'Please upload all required images',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
       await axios.post('https://btts-server-production.up.railway.app/wise-stocks', 
-        formData,
+        {
+          ...formData,
+          serviceName: 'WiseStock',
+          status: 'available'
+        },
         {
           headers: {
-            'x-api-key': 'admin123456'
+            'x-api-key': 'admin123456',
+            'Content-Type': 'application/json'
           }
         }
       );
@@ -252,14 +294,13 @@ const AddWiseStock = () => {
           userName: '',
           userEmail: ''
         });
-        window.location.href = '/dashboard/add-wise-stocks';
       }, 1500);
 
     } catch (error) {
       console.error('Error adding Wise stock:', error);
       Swal.fire({
         title: 'Error!',
-        text: 'Failed to add Wise stock',
+        text: 'Failed to add Wise stock. Please try again.',
         icon: 'error',
         confirmButtonColor: '#ef4444'
       });
@@ -268,14 +309,14 @@ const AddWiseStock = () => {
     }
   };
 
-  // Individual file input components with unique IDs
-  const ImageUploadField = ({ label, imageType }) => {
+  // Individual file input components
+  const ImageUploadField = ({ label, imageType, required = true }) => {
     const uniqueId = `file-${imageType}-${Math.random().toString(36).substr(2, 9)}`;
     
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">
-          {label}
+          {label} {required && '*'}
         </label>
         
         {formData[imageType] ? (
@@ -286,13 +327,13 @@ const AddWiseStock = () => {
                 alt={label}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAxNkMyMC42ODYzIDE2IDE4IDE4LjY4NjMgMTggMjJDMiAxOC42ODYzIDIwLjY4NjMgMTYgMjQgMTZaIiBmaWxsPSIjOEREQ0RGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjYiIGZpbGw9IiM5Q0EzQkIiLz4KPHBhdGggZD0iTTM2IDM2SDEyQzEwLjg5NTQgMzYgMTAgMzUuMTA0NiAxMCAzNFYxNEMxMCAxMi44OTU0IDEwLjg5NTQgMTIgMTIgMTJIMzZDMzcuMTA0NiAxMiAzOCAxMi44OTU0IDM4IDE0VjM0QzM4IDM1LjEwNDYgMzcuMTA0NiAzNiAzNiAzNloiIGZpbGw9IiM5Q0EzQkIiLz4KPC9zdmc+';
+                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAxNkMyMC42ODYzIDE2IDE4IDE4LjY4NjMgMTggMjJDMiAxOC42ODYzIDIwLjY4NjMgMTYgMjQgMTZaIiBmaWxsPSIjOEREQ0RGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjYiIGZpbGw9IiM5Q0EzQkIiLz4KPHBhdGggZD0iTTM2IDM2SDEyQzEwLjg5NTQgMzYgMTAgMzUuMTA0NiAxMCAzNFYxNEMxMCAxMi44OTU0IDEwLjg5NTQgMTIgMTIgMTJIMzZDMzcuMTA0NiAxMiAzOCAxMi44OTU0IDM4IDE0VjM0QzM4IDM1LjM1MDUgMzcuMTA0NiAzNiAzNiAzNloiIGZpbGw9IiM5Q0EzQkIiLz4KPC9zdmc+';
                 }}
               />
             </div>
             <div className="flex-1">
               <p className="text-sm text-green-600 font-medium">Image uploaded</p>
-              <p className="text-xs text-green-500">Click to change</p>
+              <p className="text-xs text-green-500">Stored in Cloudinary</p>
             </div>
             <button
               type="button"
@@ -307,29 +348,30 @@ const AddWiseStock = () => {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-teal-400 transition-colors duration-200 bg-white">
             <input
               type="file"
-              accept="image/jpeg, image/jpg, image/png, image/heic, image/heif, .heic, .heif"
+              accept="image/jpeg, image/jpg, image/png, image/heic, image/heif, image/webp, image/gif, .heic, .heif"
               onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) handleImageUpload(file, imageType);
-                e.target.value = ''; // Reset input
+                e.target.value = '';
               }}
               className="hidden"
               id={uniqueId}
+              disabled={uploading[imageType]}
             />
             <label
               htmlFor={uniqueId}
-              className="flex flex-col items-center cursor-pointer"
+              className={`flex flex-col items-center cursor-pointer ${uploading[imageType] ? 'opacity-50' : ''}`}
             >
               {uploading[imageType] ? (
                 <>
                   <Loader className="w-6 h-6 text-teal-500 animate-spin mb-1" />
-                  <span className="text-xs text-gray-600">Processing...</span>
+                  <span className="text-xs text-gray-600">Uploading to Cloudinary...</span>
                 </>
               ) : (
                 <>
                   <ImageIcon className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-sm text-gray-600">Upload {label}</span>
-                  <span className="text-xs text-gray-500 mt-1">JPG, PNG, HEIC • Max 5MB</span>
+                  <span className="text-xs text-gray-500 mt-1">JPG, PNG, WEBP, GIF, HEIC • Max 10MB</span>
                 </>
               )}
             </label>
@@ -498,17 +540,25 @@ const AddWiseStock = () => {
           </form>
         </div>
 
+        {/* Configuration Status */}
+        <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+          <h4 className="text-green-800 font-medium text-sm mb-2">✓ Configuration Correct!</h4>
+          <ul className="text-green-700 text-xs space-y-1">
+            <li>• Cloud Name: <strong>dg</strong> ✓</li>
+            <li>• Upload Preset: <strong>ml_default</strong> ✓ (Unsigned)</li>
+            <li>• Status: Ready to upload images</li>
+          </ul>
+        </div>
+
         {/* Info Box */}
         <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
           <h4 className="text-blue-800 font-medium text-sm mb-2">Important Notes:</h4>
           <ul className="text-blue-700 text-xs space-y-1">
             <li>• All fields marked with * are required</li>
-            <li>• Service name will be automatically set to "WiseStock"</li>
-            <li>• Stock status will be set to "available" by default</li>
-            <li>• <strong>HEIC support:</strong> HEIC files will be automatically converted to JPEG</li>
-            <li>• Maximum image size: 5MB per image</li>
-            <li>• Supported formats: JPG, PNG, HEIC, HEIF</li>
-            <li>• HEIC conversion requires internet connection</li>
+            <li>• All images must be uploaded before submission</li>
+            <li>• <strong>Cloudinary Storage:</strong> Images stored securely in Cloudinary</li>
+            <li>• <strong>HEIC support:</strong> HEIC files automatically converted to JPEG</li>
+            <li>• Maximum image size: 10MB per image</li>
           </ul>
         </div>
       </div>

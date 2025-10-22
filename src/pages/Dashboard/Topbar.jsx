@@ -21,9 +21,6 @@ const Topbar = ({ setIsSidebarOpen }) => {
         {/* Notification */}
         <button className="relative hover:text-gray-300 transition text-white">
           <Bell className="w-6 h-6" />
-          <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">
-            3
-          </span>
         </button>
       </div>
     </div>
