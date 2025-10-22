@@ -7,6 +7,9 @@ import {
   CalendarCheck,
   ClipboardList,
   Home,
+  Workflow,
+  WifiHigh,
+  LayoutDashboardIcon,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -22,15 +25,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       category: "Users",
       items: [
         { name: "All Users", path: "/dashboard/admin-users", icon: <UserPlus size={18} /> },
-        { name: "Online Admission", path: "/online-admission", icon: <Users size={18} /> },
       ],
     },
     {
-      category: "Student",
+      category: "WISE",
       items: [
-        { name: "List of Students", path: "/students", icon: <Users size={18} /> },
-        { name: "Manage Student", path: "/manage-student", icon: <UserPlus size={18} /> },
-        { name: "Reports", path: "/student-reports", icon: <FileText size={18} />, badge: 3 },
+
+        { name: "All Wise", path: "/dashboard/admin-services", icon: <WifiHigh size={18} /> },
+        { name: "Ordered Wise", path: "/dashboard/admin-orders", icon: <LayoutDashboardIcon size={18} /> },
+        { name: "Add Services Wise", path: "/dashboard/add-services", icon: <Workflow size={18} /> },
+        { name: "All Wise Stocks", path: "/dashboard/all-wise-stocks", icon: <Workflow size={18} /> },
+        { name: "Add Wise Stocks", path: "/dashboard/add-wise-stocks", icon: <Workflow size={18} /> },
       ],
     },
     {

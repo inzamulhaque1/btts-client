@@ -54,9 +54,9 @@ const Navbar = () => {
       return [
         { name: "Admin Dashboard", path: "/dashboard", icon: LayoutDashboardIcon },
         // { name: "All Users", path: "/admin-users", icon: User },
-        { name: "Add Service", path: "/add-services", icon: Workflow },
-        { name: "All Service", path: "/admin-services", icon: WifiHigh },
-        { name: "All Orders", path: "/admin-orders", icon: LayoutDashboard },
+        // { name: "Add Service", path: "/add-services", icon: Workflow },
+        // { name: "All Service", path: "/admin-services", icon: WifiHigh },
+        // { name: "All Orders", path: "/admin-orders", icon: LayoutDashboard },
         ...baseItems,
       ];
     }

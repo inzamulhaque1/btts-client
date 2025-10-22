@@ -7,7 +7,6 @@ import Services from "../pages/Services/Services";
 import AddServicePage from "../pages/Services/AddService";
 import ServiceDetails from "../pages/Services/ServiceDetails";
 import AboutUs from "../pages/About/AboutUs";
-
 import MyOrders from "../pages/Dashboard/User/MyOrders";
 import AdminOrders from "../pages/Dashboard/Admin/AdminOrders";
 import UnderConstruction from "../components/UnderConstruction";
@@ -17,6 +16,9 @@ import AllUsers from "../pages/Dashboard/Admin/AllUsers";
 import AllServices from "../pages/Dashboard/Admin/AllServices";
 import ProxyIP from "../pages/OurServices/ProxyIP/ProxyIP";
 import Dashboard from "../layout/Dashboard";
+import AllWiseStocks from "../pages/Dashboard/Admin/AllWiseStocks";
+import AddWiseStock from "../pages/Dashboard/Admin/AddWiseStock";
+import WiseStockDetails from "../pages/Dashboard/Admin/WiseStockDetails";
 
 export const router = createBrowserRouter([
   {
@@ -53,14 +55,6 @@ export const router = createBrowserRouter([
         element: <Services></Services>,
       },
       {
-        path: "/add-services",
-        element: <AddServicePage></AddServicePage>,
-      },
-      {
-        path: "/admin-services",
-        element: <AllServices></AllServices>,
-      },
-      {
         path: "/service-details/:id",
         element: <ServiceDetails></ServiceDetails>,
       },
@@ -68,12 +62,7 @@ export const router = createBrowserRouter([
       {
         path: "/my-orders",
         element: <MyOrders></MyOrders>,
-      },
-      {
-        path: "/admin-orders",
-        element: <AdminOrders></AdminOrders>,
-      },
-      
+      },     
       {
         path: "/Proxy",
         element: <ProxyIP></ProxyIP>,
@@ -91,6 +80,30 @@ export const router = createBrowserRouter([
       {
         path: "admin-users",
         element: <AllUsers></AllUsers>,
+      },
+      {
+        path: "add-services",
+        element: <AddServicePage></AddServicePage>,
+      },
+      {
+        path: "admin-services",
+        element: <AllServices></AllServices>,
+      },
+      {
+        path: "admin-orders",
+        element: <AdminOrders></AdminOrders>,
+      },
+      {
+        path: "all-wise-stocks",
+        element: <AllWiseStocks></AllWiseStocks>,
+      },
+      {
+        path: "/dashboard/wise-stocks/:id",
+        element: <WiseStockDetails></WiseStockDetails>,
+      },
+      {
+        path: "add-wise-stocks",
+        element: <AddWiseStock></AddWiseStock>,
       },
     ]
   },
