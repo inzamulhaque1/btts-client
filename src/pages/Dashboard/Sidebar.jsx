@@ -39,13 +39,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       ],
     },
     {
-      category: "Attendance",
+      category: "CPA NETWORK",
       items: [
-        { name: "Student Attendance", path: "/student-attendance", icon: <CalendarCheck size={18} /> },
-        { name: "Student Attn Reports", path: "/student-attn-reports", icon: <ClipboardList size={18} />, badge: 5 },
-        { name: "Employee Attendance", path: "/employee-attendance", icon: <CalendarCheck size={18} /> },
-        { name: "Employee Attn Reports", path: "/employee-attn-reports", icon: <ClipboardList size={18} /> },
-        { name: "Attendance Devices", path: "/attendance-devices", icon: <ClipboardList size={18} /> },
+        { name: "ADD NETWORK", path: "/add-cpa-network", icon: <CalendarCheck size={18} /> },
+        
       ],
     },
     {
