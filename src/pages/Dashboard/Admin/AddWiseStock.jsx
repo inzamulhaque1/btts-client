@@ -1,445 +1,531 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import Swal from "sweetalert2";
-import { Plus, Trash2, Eye, RefreshCw, Loader, Shield, Search, Filter } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import axios from 'axios';
+import Swal from 'sweetalert2';
+import { ArrowLeft, Save, Loader, Shield, Upload, X, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 
-const AllWiseStocks = () => {
-  const [stocks, setStocks] = useState([]);
-  const [filteredStocks, setFilteredStocks] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const navigate = useNavigate();
+// Use your existing ml_default preset that is already UNSIGNED
+const CLOUDINARY_CONFIG = {
+  cloudName: 'dggaympdv', // Your cloud name
+  uploadPreset: 'ml_default', // This exists and is UNSIGNED
+};
 
-  const [stats, setStats] = useState({
-    totalStocks: 0,
-    availableStocks: 0,
-    soldStocks: 0,
-    suspendedStocks: 0,
-    disabledStocks: 0,
-    activeStocks: 0,
-    usedStocks: 0
+const AddWiseStock = () => {
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState({
+    authImage: false,
+    docImg1: false,
+    docImg2: false
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    wiseName: '',
+    wiseEmail: '',
+    wisePassword: '',
+    authImage: '',
+    docImg1: '',
+    docImg2: '',
+    userName: '' // Removed userEmail field
   });
 
-  const statusOptions = [
-    { value: "all", label: "All Status", color: "bg-gray-100 text-gray-800" },
-    { value: "available", label: "Available", color: "bg-green-100 text-green-800" },
-    { value: "sold", label: "Sold", color: "bg-yellow-100 text-yellow-800" },
-    { value: "suspended", label: "Suspended", color: "bg-red-100 text-red-800" },
-    { value: "disabled", label: "Disabled", color: "bg-red-100 text-red-800" },
-    { value: "active", label: "Active", color: "bg-teal-100 text-teal-800" },
-    { value: "used", label: "Used", color: "bg-purple-100 text-purple-800" }
-  ];
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const fetchStocks = async () => {
+  // Simple HEIC to JPEG conversion using heic2any library
+  const convertHeicToJpeg = async (file) => {
     try {
-      setLoading(true);
-      const response = await axios.get(
-        "https://btts-server-production.up.railway.app/wise-stocks",
+      const heic2any = (await import('heic2any')).default;
+      
+      const conversionResult = await heic2any({
+        blob: file,
+        toType: 'image/jpeg',
+        quality: 0.8
+      });
+
+      const newFile = new File(
+        [conversionResult],
+        file.name.replace(/\.heic$/i, '.jpg'),
         {
-          headers: {
-            "x-api-key": "admin123456",
-          },
+          type: 'image/jpeg',
+          lastModified: new Date().getTime()
         }
       );
-      setStocks(response.data);
-      setFilteredStocks(response.data);
+
+      return newFile;
     } catch (error) {
-      console.error("Error fetching Wise stocks:", error);
+      console.error('HEIC conversion error:', error);
+      throw new Error('HEIC conversion failed. Please use JPEG or PNG format.');
+    }
+  };
+
+  // Cloudinary upload function
+  const uploadToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_CONFIG.uploadPreset);
+    
+    // Optional: Add folder for organization
+    formData.append('folder', 'wise-stocks');
+
+    console.log('Uploading to Cloudinary:', {
+      cloudName: CLOUDINARY_CONFIG.cloudName,
+      uploadPreset: CLOUDINARY_CONFIG.uploadPreset
+    });
+
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('Cloudinary error:', data);
+      throw new Error(data.error?.message || `Upload failed: ${response.status}`);
+    }
+
+    return data.secure_url;
+  };
+
+  // Enhanced image upload with Cloudinary
+  const handleImageUpload = async (file, imageType) => {
+    if (!file) return;
+
+    // Check file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
       Swal.fire({
-        title: "Error!",
-        text: "Failed to fetch Wise stocks",
-        icon: "error",
-        confirmButtonColor: "#ef4444",
+        title: 'File too large!',
+        text: 'Please select an image smaller than 10MB',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = [
+      'image/jpeg', 
+      'image/jpg', 
+      'image/png', 
+      'image/heic', 
+      'image/heif',
+      'image/webp',
+      'image/gif',
+      'application/octet-stream'
+    ];
+    
+    const isHeic = file.type.includes('heic') || 
+                   file.type.includes('heif') ||
+                   file.name.toLowerCase().endsWith('.heic') ||
+                   file.name.toLowerCase().endsWith('.heif');
+
+    const isValidType = allowedTypes.includes(file.type.toLowerCase()) || isHeic;
+    
+    if (!isValidType) {
+      Swal.fire({
+        title: 'Invalid file type!',
+        text: 'Please select JPG, PNG, WEBP, GIF, or HEIC image files',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
+    try {
+      setUploading(prev => ({ ...prev, [imageType]: true }));
+
+      let fileToUpload = file;
+
+      // Convert HEIC to JPEG if needed
+      if (isHeic) {
+        const conversionToast = Swal.fire({
+          title: 'Converting HEIC...',
+          text: 'Please wait while we convert your HEIC image',
+          icon: 'info',
+          showConfirmButton: false,
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        try {
+          fileToUpload = await convertHeicToJpeg(file);
+          await conversionToast.close();
+        } catch (conversionError) {
+          await conversionToast.close();
+          throw conversionError;
+        }
+      }
+
+      // Upload to Cloudinary
+      const uploadToast = Swal.fire({
+        title: 'Uploading to Cloudinary...',
+        text: 'Please wait while we upload your image',
+        icon: 'info',
+        showConfirmButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const imageUrl = await uploadToCloudinary(fileToUpload);
+      await uploadToast.close();
+
+      setFormData(prev => ({
+        ...prev,
+        [imageType]: imageUrl
+      }));
+      
+      Swal.fire({
+        title: 'Success!',
+        text: 'Image uploaded successfully to Cloudinary',
+        icon: 'success',
+        confirmButtonColor: '#0d9488',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      
+      let errorMessage = 'Failed to upload image. Please try again.';
+      
+      if (error.message.includes('Upload preset')) {
+        errorMessage = 'Upload preset issue. Please check your Cloudinary configuration.';
+      } else if (error.message.includes('400')) {
+        errorMessage = 'Invalid request to Cloudinary.';
+      } else if (error.message.includes('network')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      }
+
+      Swal.fire({
+        title: 'Upload Failed!',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+    } finally {
+      setUploading(prev => ({ ...prev, [imageType]: false }));
+    }
+  };
+
+  const removeImage = (imageType) => {
+    setFormData(prev => ({
+      ...prev,
+      [imageType]: ''
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validation
+    const requiredFields = ['wiseName', 'wiseEmail', 'wisePassword', 'userName', 'authImage'];
+    const missingFields = requiredFields.filter(field => !formData[field]);
+    
+    if (missingFields.length > 0) {
+      Swal.fire({
+        title: 'Missing Fields!',
+        text: 'Please fill in all required fields',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      await axios.post('https://btts-server-production.up.railway.app/wise-stocks', 
+        {
+          ...formData,
+          serviceName: 'WiseStock',
+          status: 'available'
+        },
+        {
+          headers: {
+            'x-api-key': 'admin123456',
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      Swal.fire({
+        title: 'Success!',
+        text: 'Wise stock added successfully',
+        icon: 'success',
+        confirmButtonColor: '#0d9488',
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      // Reset form after delay
+      setTimeout(() => {
+        setFormData({
+          wiseName: '',
+          wiseEmail: '',
+          wisePassword: '',
+          authImage: '',
+          docImg1: '',
+          docImg2: '',
+          userName: ''
+        });
+      }, 1500);
+
+    } catch (error) {
+      console.error('Error adding Wise stock:', error);
+      Swal.fire({
+        title: 'Error!',
+        text: 'Failed to add Wise stock. Please try again.',
+        icon: 'error',
+        confirmButtonColor: '#ef4444'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get(
-        "https://btts-server-production.up.railway.app/users",
-        {
-          headers: {
-            "x-api-key": "admin123456",
-          },
-        }
-      );
-      setUsers(response.data);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  const getUserName = (userId) => {
-    if (!userId) return "-";
-    const user = users.find(u => u.uid === userId || u._id === userId);
-    return user ? user.displayName || user.email : "Unknown User";
-  };
-
-  const calculateStats = (stocksData) => {
-    return {
-      totalStocks: stocksData.length,
-      availableStocks: stocksData.filter(s => s.status === "available").length,
-      soldStocks: stocksData.filter(s => s.status === "sold").length,
-      suspendedStocks: stocksData.filter(s => s.status === "suspended").length,
-      disabledStocks: stocksData.filter(s => s.status === "disabled").length,
-      activeStocks: stocksData.filter(s => s.status === "active").length,
-      usedStocks: stocksData.filter(s => s.status === "used").length
-    };
-  };
-
-  // Filter stocks based on search and status
-  useEffect(() => {
-    let filtered = stocks;
-
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(stock =>
-        stock.wiseName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stock.wiseEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        stock.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getUserName(stock.soldTo)?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(stock => stock.status === statusFilter);
-    }
-
-    setFilteredStocks(filtered);
-    setStats(calculateStats(filtered));
-  }, [searchTerm, statusFilter, stocks, users]);
-
-  const getStatusColor = (status) => {
-    const option = statusOptions.find(opt => opt.value === status);
-    return option ? option.color : "bg-gray-100 text-gray-800";
-  };
-
-  const getStatusLabel = (status) => {
-    const option = statusOptions.find(opt => opt.value === status);
-    return option ? option.label : status;
-  };
-
-  const deleteStock = async (stockId) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: "You won't be able to revert this!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#ef4444",
-      cancelButtonColor: "#6b7280",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await axios.delete(
-          `https://btts-server-production.up.railway.app/wise-stocks/${stockId}`,
-          {
-            headers: {
-              "x-api-key": "admin123456",
-            },
-          }
-        );
-
-        Swal.fire({
-          title: "Deleted!",
-          text: "Wise stock has been deleted.",
-          icon: "success",
-          confirmButtonColor: "#0d9488",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-
-        fetchStocks();
-      } catch (error) {
-        console.error("Error deleting Wise stock:", error);
-        Swal.fire({
-          title: "Error!",
-          text: "Failed to delete Wise stock",
-          icon: "error",
-          confirmButtonColor: "#ef4444",
-        });
-      }
-    }
-  };
-
-  useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([fetchStocks(), fetchUsers()]);
-    };
-    loadData();
-  }, []);
-
-  if (loading) {
+  // Individual file input components
+  const ImageUploadField = ({ label, imageType, required = true }) => {
+    const uniqueId = `file-${imageType}-${Math.random().toString(36).substr(2, 9)}`;
+    
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader className="w-12 h-12 text-teal-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading Wise stocks...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              Wise Stocks Management
-            </h1>
-            <p className="text-gray-600">Manage your Wise account inventory</p>
-          </div>
-          <button
-            onClick={() => navigate("/dashboard/add-wise-stocks")}
-            className="flex items-center gap-2 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition-all duration-300 font-semibold"
-          >
-            <Plus className="w-5 h-5" />
-            Add Wise Stock
-          </button>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-8">
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Total</p>
-              <p className="text-xl font-bold text-gray-900">
-                {stats.totalStocks}
-              </p>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">
+          {label} {required && '*'}
+        </label>
+        
+        {formData[imageType] ? (
+          <div className="flex items-center gap-3 p-3 border border-green-300 rounded-lg bg-green-50">
+            <div className="flex-shrink-0 w-12 h-12 border rounded overflow-hidden bg-white">
+              <img 
+                src={formData[imageType]} 
+                alt={label}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA0OCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjQ4IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAxNkMyMC42ODYzIDE2IDE4IDE4LjY4NjMgMTggMjJDMiAxOC42ODYzIDIwLjY4NjMgMTYgMjQgMTZaIiBmaWxsPSIjOEREQ0RGIi8+CjxjaXJjbGUgY3g9IjI0IiBjeT0iMjQiIHI9IjYiIGZpbGw9IiM5Q0EzQkIiLz4KPHBhdGggZD0iTTM2IDM2SDEyQzEwLjg5NTQgMzYgMTAgMzUuMTA0NiAxMCAzNFYxNEMxMCAxMi44OTU0IDEwLjg5NTQgMTIgMTIgMTJIMzZDMzcuMTA0NiAxMiAzOCAxMi44OTU0IDM4IDE0VjM0QzM4IDM1LjM1MDUgMzcuMTA0NiAzNiAzNiAzNloiIGZpbGw9IiM5Q0EzQkIiLz4KPC9zdmc+';
+                }}
+              />
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Available</p>
-              <p className="text-xl font-bold text-green-600">
-                {stats.availableStocks}
-              </p>
+            <div className="flex-1">
+              <p className="text-sm text-green-600 font-medium">Image uploaded</p>
+              <p className="text-xs text-green-500">Stored in Cloudinary</p>
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Sold</p>
-              <p className="text-xl font-bold text-blue-600">
-                {stats.soldStocks}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Active</p>
-              <p className="text-xl font-bold text-teal-600">
-                {stats.activeStocks}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Suspended</p>
-              <p className="text-xl font-bold text-yellow-600">
-                {stats.suspendedStocks}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Disabled</p>
-              <p className="text-xl font-bold text-red-600">
-                {stats.disabledStocks}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-            <div className="text-center">
-              <p className="text-gray-600 text-xs mb-1">Used</p>
-              <p className="text-xl font-bold text-purple-600">
-                {stats.usedStocks}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200 shadow-sm">
-          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-              {/* Search */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Search by name, email, or sold to..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Status Filter */}
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none"
-                >
-                  {statusOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
             <button
-              onClick={() => {
-                fetchStocks();
-                fetchUsers();
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-all duration-300 font-medium"
+              type="button"
+              onClick={() => removeImage(imageType)}
+              className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+              title="Remove image"
             >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
+              <X className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-teal-400 transition-colors duration-200 bg-white">
+            <input
+              type="file"
+              accept="image/jpeg, image/jpg, image/png, image/heic, image/heif, image/webp, image/gif, .heic, .heif"
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) handleImageUpload(file, imageType);
+                e.target.value = '';
+              }}
+              className="hidden"
+              id={uniqueId}
+              disabled={uploading[imageType]}
+            />
+            <label
+              htmlFor={uniqueId}
+              className={`flex flex-col items-center cursor-pointer ${uploading[imageType] ? 'opacity-50' : ''}`}
+            >
+              {uploading[imageType] ? (
+                <>
+                  <Loader className="w-6 h-6 text-teal-500 animate-spin mb-1" />
+                  <span className="text-xs text-gray-600">Uploading to Cloudinary...</span>
+                </>
+              ) : (
+                <>
+                  <ImageIcon className="w-6 h-6 text-gray-400 mb-1" />
+                  <span className="text-sm text-gray-600">Upload {label}</span>
+                  <span className="text-xs text-gray-500 mt-1">JPG, PNG, WEBP, GIF, HEIC • Max 10MB</span>
+                </>
+              )}
+            </label>
+          </div>
+        )}
+      </div>
+    );
+  };
 
-        {/* Stocks Table */}
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Wise Account
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Added By
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Sold To
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                    Date Added
-                  </th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredStocks.length === 0 ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center">
-                      <div className="text-gray-500">
-                        <Shield className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg">No Wise stocks found</p>
-                        <p className="text-sm">
-                          {searchTerm || statusFilter !== "all" 
-                            ? "Try adjusting your search or filter criteria" 
-                            : "Add your first Wise stock to get started"}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredStocks.map((stock) => (
-                    <tr
-                      key={stock._id}
-                      className="hover:bg-gray-50 transition-colors duration-200"
-                    >
-                      <td className="px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">
-                            {stock.wiseName}
-                          </p>
-                          <p className="text-gray-600 text-sm">
-                            {stock.wiseEmail}
-                          </p>
-                          <p className="text-gray-500 text-xs font-mono mt-1">
-                            Pass: {stock.wisePassword}
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-900 font-medium">
-                          {stock.userName}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <p className="text-gray-600 text-sm">
-                          {stock.status === 'sold' ? getUserName(stock.soldTo) : "-"}
-                        </p>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                            stock.status
-                          )}`}
-                        >
-                          {getStatusLabel(stock.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-gray-700 text-sm">
-                        {new Date(stock.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => navigate(`/dashboard/wise-stocks/${stock._id}`)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-300"
-                            title="View Details"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => deleteStock(stock._id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-300"
-                            title="Delete Stock"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+  return (
+    <div className="min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-4 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Back</span>
+          </button>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Add New Wise Stock</h1>
+            <p className="text-gray-600 text-sm">Add a new Wise account to your inventory</p>
           </div>
         </div>
 
-        {/* Footer Info */}
-        <div className="mt-4 text-center">
-          <p className="text-gray-500 text-sm">
-            Showing {filteredStocks.length} of {stocks.length} stocks
-            {searchTerm && ` • Search: "${searchTerm}"`}
-            {statusFilter !== "all" && ` • Filter: ${getStatusLabel(statusFilter)}`}
-          </p>
+        {/* Form */}
+        <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Wise Account Information
+            </h2>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+            {/* Wise Account Details */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Account Holder Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="wiseName"
+                    value={formData.wiseName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    placeholder="Enter account holder name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    name="wiseEmail"
+                    value={formData.wiseEmail}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    placeholder="Enter Wise account email"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Password *
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="wisePassword"
+                      value={formData.wisePassword}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm pr-10"
+                      placeholder="Enter Wise account password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Image Uploads */}
+              <div className="space-y-4 pt-4">
+                <ImageUploadField 
+                  label="Authentication Image" 
+                  imageType="authImage" 
+                  required={true}
+                />
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ImageUploadField 
+                    label="Document 1" 
+                    imageType="docImg1" 
+                    required={false}
+                  />
+                  <ImageUploadField 
+                    label="Document 2" 
+                    imageType="docImg2" 
+                    required={false}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Added By Details */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="text-md font-semibold text-gray-900 mb-4">Added By</h3>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Your Name *
+                  </label>
+                  <input
+                    type="text"
+                    name="userName"
+                    value={formData.userName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm"
+                    placeholder="Enter your name"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex gap-3 pt-6 border-t border-gray-200">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-teal-500 hover:bg-teal-600 disabled:bg-teal-400 text-white rounded-lg transition-all duration-200 font-semibold text-sm"
+              >
+                {loading ? (
+                  <Loader className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                {loading ? 'Adding...' : 'Add Wise Stock'}
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 font-medium text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
+
+        
       </div>
     </div>
   );
 };
 
-export default AllWiseStocks;
+export default AddWiseStock;
